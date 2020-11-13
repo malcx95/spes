@@ -1,0 +1,19 @@
+### Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+### Rust
+
+/target
+**/*.rs.bk
+
+### Krita
+*.kra-autosave.kra
+
+### Windows SDL2
+/*.dll
+/gnu-mingw
+/msvc

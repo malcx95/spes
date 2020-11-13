@@ -1,0 +1,26 @@
+[package]
+name = "plen"
+version = "0.1.0"
+authors = ["Emil Segerbäck", "Hannes Tuhkala", "Malcolm Wigren", "Frans Skarman", "Robin Sliwa"]
+edition = "2018"
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bincode = "1.2.1"
+rand = "0.7.2"
+rand_derive = "0.5.0"
+whoami = "0.6.0"
+sdl2 = {version = "0.32.2", features = ["image", "mixer", "ttf"]}
+libplen = {path="libplen"}
+unicode-truncate = "0.1.1"
+enum-map = "0.6.2"
+
+[[bin]]
+name = "server"
+path = "src/server.rs"
+
+[[bin]]
+name = "client"
+path = "src/client.rs"
