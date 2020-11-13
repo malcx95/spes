@@ -40,26 +40,18 @@ enum StateResult { Continue, GotoNext }
 
 struct MainState {
     my_id: u64,
-    camera_position: Vec2,
     game_state: gamestate::GameState,
     map: map::Map,
     last_time: Instant,
-    powerup_rotation: f32,
-    hit_effect_timer: f32,
-    dead: bool,
 }
 
 impl MainState {
     fn new(my_id: u64) -> MainState {
         MainState {
             my_id,
-            camera_position: vec2(0., 0.),
             game_state: gamestate::GameState::new(),
             map: map::Map::new(),
             last_time: Instant::now(),
-            powerup_rotation: 0.,
-            hit_effect_timer: 0.,
-            dead: false,
         }
     }
 
