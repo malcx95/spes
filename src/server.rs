@@ -161,9 +161,9 @@ impl Server {
                 match bincode::deserialize(&message) {
                     Ok(ClientMessage::Input(input)) => {
                         client.input = input;
+                        println!("Player {}: {},{}.", client.id, client.input.x_input, client.input.y_input);
                     },
                     Ok(ClientMessage::JoinGame{ mut name }) => {
-                        let mut random = rand::thread_rng();
                         if name.trim().len() != 0 {
                             name = name.trim().unicode_truncate(20).0.to_string()
                         } else {
