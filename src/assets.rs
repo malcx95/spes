@@ -9,6 +9,8 @@ use libplen::constants;
 pub struct Assets<'ttf, 'r> {
     pub font: sdl2::ttf::Font<'ttf, 'r>,
 
+    pub motorcycle: Texture<'r>,
+
     pub menu_background: Texture<'r>,
     pub end_background: Texture<'r>,
 
@@ -37,6 +39,8 @@ impl<'ttf, 'r> Assets<'ttf, 'r> {
                 .expect("Could not find font!"),
             menu_background: load_tex("resources/menu_background.png"),
             end_background: load_tex("resources/endscreen.png"),
+
+            motorcycle: load_tex("resources/bike.png"),
 
             achtung_blitzkrieg_engine: Chunk::from_file("resources/audio/achtungblitzkrieg-engine.ogg").unwrap(),
             el_pollo_romero_engine: Chunk::from_file("resources/audio/elpolloromero-engine.ogg").unwrap(),

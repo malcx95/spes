@@ -107,12 +107,6 @@ pub fn modulo(x: f32, div: f32) -> f32 {
     (x % div + div) % div
 }
 
-pub fn wrap_around(pos: Vec2) -> Vec2 {
-    vec2(
-        modulo(pos.x, constants::WORLD_SIZE),
-        modulo(pos.y, constants::WORLD_SIZE),
-    )
-}
 
 pub fn angle_diff(source_angle: f32, target_angle: f32) -> f32 {
     // From https://stackoverflow.com/a/7869457

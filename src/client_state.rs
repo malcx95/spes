@@ -9,13 +9,13 @@ use crate::assets::Assets;
 use crate::rendering;
 
 
-pub struct Map {
+pub struct ClientState {
     // add client side state
 }
 
-impl Map {
-    pub fn new() -> Map {
-        Map {
+impl ClientState {
+    pub fn new() -> ClientState {
+        ClientState {
             // init client stuff
         }
     }
@@ -27,7 +27,9 @@ impl Map {
     pub fn draw(
         &self,
         my_id: u64,
+        game_state: &GameState,
         canvas: &mut Canvas<Window>,
+        assets: &mut Assets,
     ) -> Result<(), String> {
         let (screen_w, screen_h) = canvas.logical_size();
         let screen_center = vec2(
@@ -36,6 +38,14 @@ impl Map {
         );
 
         // draw some stuff
+        for player in &game_state.players {
+            rendering::draw_texture_rotated(
+                canvas,
+                &assets.motorcycle,
+                player.position,
+                player.angle
+            );
+        }
 
         Ok(())
     }

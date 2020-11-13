@@ -29,7 +29,10 @@ pub fn draw_texture_centered(
 }
 
 pub fn draw_texture_rotated(
-    canvas: &mut Canvas<Window>, texture: &Texture, pos: Vec2, angle: f32
+    canvas: &mut Canvas<Window>,
+    texture: &Texture,
+    pos: Vec2,
+    angle: f32
 ) -> Result<(), String> {
     let texture_query = texture.query();
     let w = texture_query.width as u32;

@@ -3,7 +3,7 @@ use std::sync::mpsc::Receiver;
 use serde_derive::{Serialize, Deserialize};
 
 use crate::player::Player;
-use crate::math::{Vec2, vec2, wrap_around};
+use crate::math::{Vec2, vec2};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct GameState {
@@ -27,8 +27,7 @@ impl GameState {
      *  vec with positions where lasers are fired
      *  )
      */
-    pub fn update(&mut self, delta: f32)
-    {
+    pub fn update(&mut self, delta: f32) {
         // update game state
     }
 
@@ -44,5 +43,4 @@ impl GameState {
         }
         None
     }
-
 }

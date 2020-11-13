@@ -1,5 +1,5 @@
 mod assets;
-mod map;
+mod client_state;
 mod menu;
 mod rendering;
 
@@ -41,7 +41,7 @@ enum StateResult { Continue, GotoNext }
 struct MainState {
     my_id: u64,
     game_state: gamestate::GameState,
-    map: map::Map,
+    client_state: client_state::ClientState,
     last_time: Instant,
 }
 
@@ -50,7 +50,7 @@ impl MainState {
         MainState {
             my_id,
             game_state: gamestate::GameState::new(),
-            map: map::Map::new(),
+            client_state: client_state::ClientState::new(),
             last_time: Instant::now(),
         }
     }
@@ -122,7 +122,7 @@ impl MainState {
             input.x_input += 1.0;
         }
 
-        self.map.update(elapsed.as_secs_f32(), &self.game_state, self.my_id);
+        self.client_state.update(elapsed.as_secs_f32(), &self.game_state, self.my_id);
 
         let input_message = ClientMessage::Input(input);
         send_client_message(&input_message, &mut server_reader.stream);
@@ -131,14 +131,15 @@ impl MainState {
     }
 
     fn draw(&mut self, canvas: &mut Canvas<Window>, assets: &mut Assets) -> Result<(), String> {
-        self.map.draw(
+        self.client_state.draw(
             self.my_id,
+            &self.game_state,
             canvas,
+            assets,
         )?;
 
         Ok(())
     }
-
 }
 
 pub fn main() -> Result<(), String> {
