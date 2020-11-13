@@ -28,8 +28,8 @@ impl Player {
         }
     }
 
-    pub fn update(&mut self, _delta_time: f32) {
+    pub fn update(&mut self, delta_time: f32) {
         // player update here
-        self.position += Vec2::from_direction(self.angle, self.speed);
+        self.position += Vec2::from_direction(self.angle, self.speed * delta_time);
     }
 }
