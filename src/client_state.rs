@@ -1,6 +1,7 @@
 use libplen::constants;
 use libplen::gamestate::GameState;
 use libplen::math::{self, vec2, Vec2};
+use macroquad::prelude::*;
 
 use crate::assets::Assets;
 
@@ -23,13 +24,17 @@ impl ClientState {
         &self,
         my_id: u64,
         game_state: &GameState,
-        // TODO add some sort of canvas and shit
         assets: &mut Assets,
     ) -> Result<(), String> {
-        // let (screen_w, screen_h) = canvas.logical_size();
-        // let screen_center = vec2(screen_w as f32 * 0.5, screen_h as f32 * 0.5);
 
-        // draw some stuff
+        clear_background(RED);
+
+        draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
+        draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
+        draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
+
+        draw_text("IT WORKS!", 20.0, 20.0, 30.0, DARKGRAY);
+
         for player in &game_state.players { }
 
         Ok(())

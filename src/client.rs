@@ -9,6 +9,7 @@ use libplen::constants;
 use libplen::gamestate;
 use libplen::math::{vec2, Vec2};
 use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage, SoundEffect};
+use assets::Assets;
 
 fn send_client_message(msg: &ClientMessage, stream: &mut TcpStream) {
     let data = bincode::serialize(msg).expect("Failed to encode message");
@@ -75,12 +76,11 @@ impl MainState {
         StateResult::Continue
     }
 
-    // fn draw(&mut self, canvas: &mut Canvas<Window>, assets: &mut Assets) -> Result<(), String> {
-    //     self.client_state
-    //         .draw(self.my_id, &self.game_state, canvas, assets)?;
+    fn draw(&mut self, assets: &mut Assets) -> Result<(), String> {
+        self.client_state.draw(self.my_id, &self.game_state, assets)?;
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 }
 
 pub fn main() -> Result<(), String> {
