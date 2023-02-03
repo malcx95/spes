@@ -99,6 +99,7 @@ impl Server {
                         println!("Could not send assign id message");
                         continue;
                     }
+                    println!("Sent id {}", self.next_id);
                     self.connections.push(Client {
                         id: self.next_id,
                         message_reader: MessageReader::new(stream),

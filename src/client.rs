@@ -89,32 +89,32 @@ async fn main() -> Result<(), String> {
     let stream = TcpStream::connect(host).expect("Could not connect to server");
     println!("Connected to server");
 
-    // stream
-    //     .set_nonblocking(true)
-    //     .expect("Could not set socket as nonblocking");
+    stream
+        .set_nonblocking(true)
+        .expect("Could not set socket as nonblocking");
     let mut reader = MessageReader::new(stream);
 
-    // let msg = loop {
-    //     reader.fetch_bytes().unwrap();
-    //     if let Some(msg) = reader.iter().next() {
-    //         break bincode::deserialize(&msg).unwrap();
-    //     }
-    // };
+    let msg = loop {
+        reader.fetch_bytes().unwrap();
+        if let Some(msg) = reader.iter().next() {
+            break bincode::deserialize(&msg).unwrap();
+        }
+    };
 
-    // let my_id = if let ServerMessage::AssignId(id) = msg {
-    //     println!("Received the id {}", id);
-    //     id
-    // } else {
-    //     panic!("Expected to get an id from server")
-    // };
+    let _my_id = if let ServerMessage::AssignId(id) = msg {
+        println!("Received the id {}", id);
+        id
+    } else {
+        panic!("Expected to get an id from server")
+    };
 
-    let mut name = whoami::username();
+    let name = whoami::username();
 
     loop {
 
         send_client_message(
             &ClientMessage::JoinGame {
-                name: "hej".to_string(),
+                name
             },
             &mut reader.stream,
         );
