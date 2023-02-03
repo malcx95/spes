@@ -5,11 +5,11 @@ use std::io::prelude::*;
 use std::net::TcpStream;
 use std::time::Instant;
 
+use assets::Assets;
 use libplen::constants;
 use libplen::gamestate;
 use libplen::math::{vec2, Vec2};
 use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage, SoundEffect};
-use assets::Assets;
 
 fn send_client_message(msg: &ClientMessage, stream: &mut TcpStream) {
     let data = bincode::serialize(msg).expect("Failed to encode message");
@@ -45,10 +45,7 @@ impl MainState {
         }
     }
 
-    fn update(
-        &mut self,
-        server_reader: &mut MessageReader,
-    ) -> StateResult {
+    fn update(&mut self, server_reader: &mut MessageReader) -> StateResult {
         let elapsed = self.last_time.elapsed();
         self.last_time = Instant::now();
         let dt_duration = std::time::Duration::from_millis(1000 / 60);
@@ -77,7 +74,8 @@ impl MainState {
     }
 
     fn draw(&mut self, assets: &mut Assets) -> Result<(), String> {
-        self.client_state.draw(self.my_id, &self.game_state, assets)?;
+        self.client_state
+            .draw(self.my_id, &self.game_state, assets)?;
 
         Ok(())
     }
@@ -112,19 +110,17 @@ pub fn main() -> Result<(), String> {
     loop {
         send_client_message(
             &ClientMessage::JoinGame {
-                name: "hej".to_string()
+                name: "hej".to_string(),
             },
             &mut reader.stream,
         );
 
         let main_state = &mut MainState::new(my_id);
         'gameloop: loop {
-
             // game loop here please
             if true {
                 break 'gameloop;
             }
         }
     }
-
 }

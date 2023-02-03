@@ -26,7 +26,6 @@ impl ClientState {
         game_state: &GameState,
         assets: &mut Assets,
     ) -> Result<(), String> {
-
         clear_background(RED);
 
         draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
@@ -35,7 +34,7 @@ impl ClientState {
 
         draw_text("IT WORKS!", 20.0, 20.0, 30.0, DARKGRAY);
 
-        for player in &game_state.players { }
+        for player in &game_state.players {}
 
         Ok(())
     }
