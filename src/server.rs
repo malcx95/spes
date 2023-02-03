@@ -121,7 +121,7 @@ impl Server {
     fn update_clients(&mut self, delta_time: f32) {
         // Send data to clients
         let mut clients_to_delete = vec![];
-        let mut sounds_to_play = vec![];
+        // let mut sounds_to_play = vec![];
 
         macro_rules! remove_player_on_disconnect {
             ($op:expr, $id:expr) => {
@@ -175,15 +175,15 @@ impl Server {
             remove_player_on_disconnect!(result, client.id);
         }
 
-        for (sound, pos) in &sounds_to_play {
-            for client in self.connections.iter_mut() {
-                let result = send_server_message(
-                    &ServerMessage::PlaySound(*sound, *pos),
-                    &mut client.message_reader.stream,
-                );
-                remove_player_on_disconnect!(result, client.id);
-            }
-        }
+        // for (sound, pos) in &sounds_to_play {
+        //     for client in self.connections.iter_mut() {
+        //         let result = send_server_message(
+        //             &ServerMessage::PlaySound(*sound, *pos),
+        //             &mut client.message_reader.stream,
+        //         );
+        //         remove_player_on_disconnect!(result, client.id);
+        //     }
+        // }
 
         self.state
             .players
