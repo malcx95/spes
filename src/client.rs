@@ -47,6 +47,26 @@ impl MainState {
         }
     }
 
+    fn read_input() -> ClientInput {
+        let mut x_input = 0.0;
+        let mut y_input = 0.0;
+
+        if is_key_down(KeyCode::W) {
+            y_input += 1.0;
+        }
+        if is_key_down(KeyCode::S) {
+            y_input -= 1.0;
+        }
+        if is_key_down(KeyCode::A) {
+            x_input -= 1.0;
+        }
+        if is_key_down(KeyCode::D) {
+            x_input += 1.0;
+        }
+
+        ClientInput{ x_input, y_input }
+    }
+
     fn update(&mut self, server_reader: &mut MessageReader) -> StateResult {
         let elapsed = self.last_time.elapsed();
         self.last_time = Instant::now();
@@ -64,7 +84,7 @@ impl MainState {
             }
         }
 
-        let mut input = ClientInput::new();
+        let mut input = Self::read_input();
 
         self.client_state
             .update(elapsed.as_secs_f32(), &self.game_state, self.my_id);
@@ -100,13 +120,16 @@ async fn main() -> Result<(), String> {
             break bincode::deserialize(&msg).unwrap();
         }
     };
+    let mut assets = assets::Assets::new();
 
-    let _my_id = if let ServerMessage::AssignId(id) = msg {
+    let my_id = if let ServerMessage::AssignId(id) = msg {
         println!("Received the id {}", id);
         id
     } else {
         panic!("Expected to get an id from server")
     };
+
+    let mut main_state = MainState::new(my_id);
 
     let name = whoami::username();
 
@@ -121,17 +144,10 @@ async fn main() -> Result<(), String> {
 
         // let main_state = &mut MainState::new(my_id);
         loop {
-            // game loop here please
-            // if true {
-            //     break 'gameloop;
-            // }
 
-            clear_background(RED);
+            main_state.update(&mut reader);
 
-            draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
-            draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
-            draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
-            draw_text("HELLO", 20.0, 20.0, 20.0, DARKGRAY);
+            main_state.draw(&mut assets)?;
 
             next_frame().await;
         }
