@@ -88,9 +88,9 @@ pub fn main() -> Result<(), String> {
     let stream = TcpStream::connect(host).expect("Could not connect to server");
     println!("Connected to server");
 
-    stream
-        .set_nonblocking(true)
-        .expect("Could not set socket as nonblocking");
+    // stream
+    //     .set_nonblocking(true)
+    //     .expect("Could not set socket as nonblocking");
     let mut reader = MessageReader::new(stream);
 
     let msg = loop {
