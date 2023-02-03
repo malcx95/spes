@@ -80,8 +80,7 @@ pub enum SoundEffect { Powerup, Explosion, Gun, LaserCharge, LaserFire }
 #[derive(Serialize, Deserialize)]
 pub enum ServerMessage {
     AssignId(u64),
-    GameState(crate::gamestate::GameState),
-    PlaySound(SoundEffect, Vec2),
+    GameState(crate::gamestate::GameState)
 }
 
 #[derive(Serialize, Deserialize)]
