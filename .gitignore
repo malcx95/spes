@@ -17,3 +17,5 @@
 /*.dll
 /gnu-mingw
 /msvc
+
+.direnv/
