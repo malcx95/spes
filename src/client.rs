@@ -11,6 +11,8 @@ use libplen::gamestate;
 use libplen::math::{vec2, Vec2};
 use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage, SoundEffect};
 
+use macroquad::prelude::*;
+
 fn send_client_message(msg: &ClientMessage, stream: &mut TcpStream) {
     let data = bincode::serialize(msg).expect("Failed to encode message");
     let length = data.len() as u16;
@@ -81,7 +83,8 @@ impl MainState {
     }
 }
 
-pub fn main() -> Result<(), String> {
+#[macroquad::main("BasicShapes")]
+async fn main() -> Result<(), String> {
     let host = std::env::var("SERVER").unwrap_or(String::from("localhost:4444"));
     let stream = TcpStream::connect(host).expect("Could not connect to server");
     println!("Connected to server");
@@ -91,23 +94,24 @@ pub fn main() -> Result<(), String> {
     //     .expect("Could not set socket as nonblocking");
     let mut reader = MessageReader::new(stream);
 
-    let msg = loop {
-        reader.fetch_bytes().unwrap();
-        if let Some(msg) = reader.iter().next() {
-            break bincode::deserialize(&msg).unwrap();
-        }
-    };
+    // let msg = loop {
+    //     reader.fetch_bytes().unwrap();
+    //     if let Some(msg) = reader.iter().next() {
+    //         break bincode::deserialize(&msg).unwrap();
+    //     }
+    // };
 
-    let my_id = if let ServerMessage::AssignId(id) = msg {
-        println!("Received the id {}", id);
-        id
-    } else {
-        panic!("Expected to get an id from server")
-    };
+    // let my_id = if let ServerMessage::AssignId(id) = msg {
+    //     println!("Received the id {}", id);
+    //     id
+    // } else {
+    //     panic!("Expected to get an id from server")
+    // };
 
     let mut name = whoami::username();
 
     loop {
+
         send_client_message(
             &ClientMessage::JoinGame {
                 name: "hej".to_string(),
@@ -115,12 +119,21 @@ pub fn main() -> Result<(), String> {
             &mut reader.stream,
         );
 
-        let main_state = &mut MainState::new(my_id);
-        'gameloop: loop {
+        // let main_state = &mut MainState::new(my_id);
+        loop {
             // game loop here please
-            if true {
-                break 'gameloop;
-            }
+            // if true {
+            //     break 'gameloop;
+            // }
+
+            clear_background(RED);
+
+            draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
+            draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
+            draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
+            draw_text("HELLO", 20.0, 20.0, 20.0, DARKGRAY);
+
+            next_frame().await;
         }
     }
 }
