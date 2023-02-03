@@ -2,6 +2,7 @@ use libplen::constants;
 use libplen::gamestate::GameState;
 use libplen::math::{self, vec2, Vec2};
 use macroquad::prelude::*;
+use macroquad::texture;
 
 use crate::assets::Assets;
 
@@ -35,7 +36,19 @@ impl ClientState {
         draw_text("HELLO", 20.0, 20.0, 20.0, DARKGRAY);
 
         for player in &game_state.players {
-            
+            let params = texture::DrawTextureParams {
+                dest_size: None,
+                source: None,
+                rotation: player.angle,
+                flip_x: false,
+                flip_y: false,
+                pivot: None,
+            };
+
+            let px = player.position.x;
+            let py = player.position.y;
+
+            texture::draw_texture_ex(assets.malcolm, px, py, BLUE, params);
         }
 
         Ok(())

@@ -28,7 +28,10 @@ impl GameState {
      *  )
      */
     pub fn update(&mut self, delta: f32) {
-        // update game state
+        for player in &mut self.players {
+            player.update(delta);
+            println!("{} {}", player.position.x, player.position.y);
+        }
     }
 
     pub fn add_player(&mut self, player: Player) {
