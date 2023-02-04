@@ -71,11 +71,15 @@ impl MainState {
 
         let (mouse_x, mouse_y) = mouse_position();
 
+        let (nmx, nmy) = (mouse_x - screen_width() / 2., mouse_y - screen_height() / 2.);
+        let aim_angle = nmy.atan2(nmx);
+
         ClientInput {
             x_input,
             y_input,
             mouse_x,
             mouse_y,
+            aim_angle
         }
     }
 

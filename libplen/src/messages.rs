@@ -93,6 +93,8 @@ pub struct ClientInput {
 
     pub mouse_x: f32,
     pub mouse_y: f32,
+
+    pub aim_angle: f32,
 }
 
 impl ClientInput {
@@ -102,6 +104,7 @@ impl ClientInput {
             y_input: 0.,
             mouse_x: 0.,
             mouse_y: 0.,
+            aim_angle: 0.,
         }
     }
 }

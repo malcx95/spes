@@ -124,6 +124,8 @@ impl ClientState {
             Self::draw_bounds(self_pos.x, self_pos.y);
 
             for player in &game_state.players {
+                Self::draw_shield(player, self_pos.x, self_pos.y);
+
                 for component in &player.components {
                     let (x, y) = (center.x + component.pos.x, center.y + component.pos.y);
                     rendering::draw_texture_centered(assets.malcolm, x, y, component.angle);
@@ -160,6 +162,20 @@ impl ClientState {
         }
 
         Ok(())
+    }
+
+    fn draw_shield(player: &Player, self_x: f32, self_y: f32) {
+        let pos = player.position();
+
+        for v in &player.shield.points {
+            let (x, y) = (
+                screen_width() / 2. - self_x + pos.x + v.x,
+                screen_height() / 2. - self_y + pos.y + v.y,
+            );
+
+            draw_circle(x, y, 10., GOLD);
+            println!("Draw {} {}", x, y);
+        }
     }
 
     pub fn my_player<'gs>(&self, my_id: u64, game_state: &'gs GameState) -> Option<&'gs Player> {
