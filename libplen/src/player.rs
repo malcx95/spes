@@ -20,7 +20,12 @@ pub struct Player {
     pub input_x: f32,
     pub input_y: f32,
 
+    pub mouse_x: f32,
+    pub mouse_y: f32,
+
     pub components: Vec<Component>,
+
+    pub is_building: bool,
 }
 
 impl Player {
@@ -32,13 +37,24 @@ impl Player {
             input_x: 0.,
             input_y: 0.,
 
+            mouse_x: 0.,
+            mouse_y: 0.,
+
             components,
+
+            is_building: false,
         }
     }
 
-    pub fn set_input(&mut self, input_x: f32, input_y: f32) {
+    pub fn set_input(&mut self, input_x: f32, input_y: f32, mouse_x: f32, mouse_y: f32) {
         self.input_x = input_x;
         self.input_y = input_y;
+        self.mouse_x = mouse_x;
+        self.mouse_y = mouse_y;
+    }
+
+    pub fn shield_update(&mut self) {
+
     }
 
     pub fn update(&mut self, rigid_body_set: &mut RigidBodySet, _delta_time: f32) {
@@ -59,7 +75,7 @@ impl Player {
             true,
         );
 
-        rb.apply_torque_impulse(self.input_x * 1_000_000., true)
+        rb.apply_torque_impulse(self.input_x * 100_000., true)
     }
 
     pub fn core(&self) -> &Component {

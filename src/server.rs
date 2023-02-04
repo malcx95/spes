@@ -109,6 +109,37 @@ impl Server {
         }
     }
 
+    pub fn init_walls(&mut self) {
+        for x in -1..2 {
+            for y in -1..2 {
+                if x == 0 && y == 0 {
+                    continue;
+                }
+
+                let dx = x as f32;
+                let dy = y as f32;
+
+                let rb = RigidBodyBuilder::dynamic().build();
+
+                let collider =
+                    ColliderBuilder::cuboid(constants::WORLD_SIZE / 2., constants::WORLD_SIZE / 2.)
+                        .mass(0.0)
+                        .translation(vector![
+                            dx * constants::WORLD_SIZE + constants::WORLD_SIZE / 2.,
+                            dy * constants::WORLD_SIZE + constants::WORLD_SIZE / 2.
+                        ])
+                        .build();
+
+                let body_handle = self.p.rigid_body_set.insert(rb);
+                self.p.collider_set.insert_with_parent(
+                    collider,
+                    body_handle,
+                    &mut self.p.rigid_body_set,
+                );
+            }
+        }
+    }
+
     pub fn update(&mut self) {
         let elapsed = self.last_time.elapsed();
         let delta_time = constants::DELTA_TIME;
@@ -237,29 +268,47 @@ impl Server {
                         }
 
                         let p = &mut self.p;
-                        let components = [(0., 0.), (200., 200.)]
-                            .into_iter()
-                            .map(|(x, y)| {
-                                let rb = RigidBodyBuilder::dynamic()
-                                    // .translation(vector![x, y])
-                                    .build();
+                        let components = [
+                            (constants::WORLD_SIZE / 2., constants::WORLD_SIZE / 2.),
+                            (200., 200.),
+                        ]
+                        .into_iter()
+                        .map(|(x, y)| {
+                            let rb = RigidBodyBuilder::dynamic()
+                                .translation(vector![x, y])
+                                .build();
 
-                                let collider = ColliderBuilder::ball(64.).restitution(1.0).build();
+                            let collider = ColliderBuilder::ball(32.).restitution(1.0).build();
 
-                                let body_handle = p.rigid_body_set.insert(rb);
-                                p.collider_set.insert_with_parent(
-                                    collider,
-                                    body_handle,
-                                    &mut p.rigid_body_set,
-                                );
+                            let body_handle = p.rigid_body_set.insert(rb);
+                            p.collider_set.insert_with_parent(
+                                collider,
+                                body_handle,
+                                &mut p.rigid_body_set,
+                            );
 
-                                Component {
-                                    pos: vec2(x, y),
-                                    physics_handle: body_handle,
-                                    angle: 0.,
-                                }
-                            })
-                            .collect();
+                            Component {
+                                pos: vec2(x, y),
+                                physics_handle: body_handle,
+                                angle: 0.,
+                            }
+                        })
+                        .collect::<Vec<_>>();
+
+                        let connections = vec![(0, 1)];
+
+                        for (l, r) in connections {
+                            let joint = FixedJointBuilder::new()
+                                .local_anchor1(point![0.0, 0.0])
+                                .local_anchor2(point![0.0, 64.0]);
+
+                            p.impulse_joint_set.insert(
+                                components[l].physics_handle,
+                                components[r].physics_handle,
+                                joint,
+                                true,
+                            );
+                        }
 
                         let player = Player::new(client.id, name, components);
                         self.state.add_player(player);
@@ -283,7 +332,12 @@ impl Server {
 
             for player in &mut self.state.players {
                 if player.id == client.id {
-                    player.set_input(client.input.x_input, client.input.y_input);
+                    player.set_input(
+                        client.input.x_input,
+                        client.input.y_input,
+                        client.input.mouse_x,
+                        client.input.mouse_y,
+                    );
                 }
             }
         }
@@ -308,6 +362,7 @@ impl Server {
 
 fn main() {
     let mut server = Server::new();
+    server.init_walls();
     loop {
         server.update();
     }

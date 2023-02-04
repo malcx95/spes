@@ -7,11 +7,11 @@ use std::net::TcpStream;
 use std::time::Instant;
 
 use color_eyre::Result;
-use egui_macroquad::egui;
-use egui_macroquad::egui::Align;
-use egui_macroquad::egui::Layout;
+use egui::{Align, Layout, Sense};
+use egui_macroquad::egui::{self, Color32, Rounding, Stroke};
 
 use assets::Assets;
+use libplen::constants::WORLD_SIZE;
 use libplen::gamestate;
 use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage};
 
@@ -69,10 +69,21 @@ impl MainState {
             x_input += 1.0;
         }
 
-        ClientInput { x_input, y_input }
+        let (mouse_x, mouse_y) = mouse_position();
+
+        ClientInput {
+            x_input,
+            y_input,
+            mouse_x,
+            mouse_y,
+        }
     }
 
-    fn update(&mut self, server_reader: &mut MessageReader) -> StateResult {
+    fn update(
+        &mut self,
+        server_reader: &mut MessageReader,
+        extra_messages: &mut Vec<ClientMessage>,
+    ) -> StateResult {
         let elapsed = self.last_time.elapsed();
         self.last_time = Instant::now();
         let dt_duration = std::time::Duration::from_millis(1000 / 60);
@@ -91,8 +102,12 @@ impl MainState {
 
         let input = Self::read_input();
 
-        self.client_state
-            .update(elapsed.as_secs_f32(), &mut self.game_state, self.my_id);
+        self.client_state.update(
+            elapsed.as_secs_f32(),
+            &mut self.game_state,
+            self.my_id,
+            extra_messages,
+        );
 
         let input_message = ClientMessage::Input(input);
         send_client_message(&input_message, &mut server_reader.stream);
@@ -151,7 +166,8 @@ async fn main() -> Result<()> {
 
         // let main_state = &mut MainState::new(my_id);
         loop {
-            main_state.update(&mut reader);
+            let mut client_messages = vec![];
+            main_state.update(&mut reader, &mut client_messages);
 
             main_state.draw(&mut assets)?;
 
@@ -171,35 +187,70 @@ async fn main() -> Result<()> {
                                 ui.heading("Modules");
                                 ui.add_space(3.0);
 
-                                egui::ScrollArea::vertical()
-                                    .id_source("modules")
-                                    .show(ui, |ui| {
-                                        ui.with_layout(Layout::left_to_right(Align::LEFT), |ui| {
-                                            ui.image(
-                                                assets.egui_textures.cannon.texture_id(ctx),
-                                                egui::Vec2 { x: 64., y: 64. },
-                                            );
-                                            ui.image(
-                                                assets.egui_textures.cannon.texture_id(ctx),
-                                                egui::Vec2 { x: 64., y: 64. },
-                                            );
-                                            ui.image(
-                                                assets.egui_textures.cannon.texture_id(ctx),
-                                                egui::Vec2 { x: 64., y: 64. },
-                                            );
-                                        })
-                                    });
+                                ui.with_layout(Layout::left_to_right(Align::LEFT), |ui| {
+                                    ui.image(
+                                        assets.egui_textures.cannon.texture_id(ctx),
+                                        egui::Vec2 { x: 64., y: 64. },
+                                    )
+                                    .interact(egui::Sense {
+                                        click: true,
+                                        drag: true,
+                                        focusable: true,
+                                    })
+                                    .clicked()
+                                    .then(|| println!("Clicked"));
+                                });
                             });
                         },
                     )
                 });
+                egui::Window::new("minimap").show(ctx, |ui| {
+                    let (response, painter) =
+                        ui.allocate_painter(ui.available_size_before_wrap(), Sense::hover());
+                    let Some(player_pos) = main_state
+                        .client_state
+                        .my_player(main_state.my_id, &main_state.game_state)
+                        .map(|p| p.position()) else { return; };
+                    let inner = response.rect.shrink(10.);
+                    let px = inner.min.x + (inner.width() * (player_pos.x / WORLD_SIZE));
+                    let py = inner.min.y + (inner.height() * (player_pos.y / WORLD_SIZE));
+                    painter.rect(
+                        inner,
+                        Rounding::none(),
+                        Color32::BLACK,
+                        Stroke::new(5., Color32::WHITE),
+                    );
+                    painter.rect_filled(
+                        egui::Rect::from_center_size((px, py).into(), (6., 6.).into()),
+                        Rounding::none(),
+                        Color32::RED,
+                    );
+                });
+                egui::Window::new("debug").show(ctx, |ui| {
+                    let Some(player) = main_state
+                        .client_state
+                        .my_player(main_state.my_id, &main_state.game_state) else { return; };
+                    ui.style_mut().wrap = Some(false);
+                    ui.monospace(format!(
+                        "player position: x: {:4.0}, y: {:4.0}",
+                        player.position().x,
+                        player.position().y
+                    ));
+                    ui.monospace(format!("player velocity: {}", player.velocity()));
+                    ui.monospace(format!(
+                        "player angle: {:1.3}",
+                        player.angle() + std::f32::consts::PI
+                    ));
+                });
             });
-
-            // Draw things before egui
 
             egui_macroquad::draw();
 
             next_frame().await;
+
+            while let Some(msg) = client_messages.pop() {
+                send_client_message(&msg, &mut reader.stream);
+            }
         }
     }
 }

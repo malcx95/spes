@@ -46,7 +46,6 @@ impl GameState {
         }
 
         let mut i: usize = 0;
-        println!("{:?}", self.bullets.len());
         while i < self.bullets.len() {
             let bullet = &mut self.bullets[i];
 

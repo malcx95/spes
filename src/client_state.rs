@@ -3,6 +3,8 @@ use color_eyre::Result;
 use egui_macroquad::egui::emath::exponential_smooth_factor;
 use libplen::constants;
 use libplen::gamestate::GameState;
+use libplen::messages::ClientMessage;
+use libplen::player::Player;
 use macroquad::prelude::*;
 
 use crate::assets::Assets;
@@ -19,6 +21,7 @@ pub struct ClientState {
     my_id: u64,
     stars: Vec<Star>,
     stars_material: Material,
+    is_building: bool,
 }
 
 const STARS_VERT: &str = include_str!("./shaders/stars.vert");
@@ -45,6 +48,7 @@ impl ClientState {
             my_id,
             stars: Self::init_stars(),
             stars_material,
+            is_building: false,
         }
     }
 
@@ -64,39 +68,50 @@ impl ClientState {
         stars
     }
 
-    pub fn update(&mut self, _delta_time: f32, _game_state: &mut GameState, _my_id: u64) {
-        // update client side stuff
+    pub fn update(
+        &mut self,
+        _delta_time: f32,
+        _game_state: &mut GameState,
+        _my_id: u64,
+        client_messages: &mut Vec<ClientMessage>,
+    ) {
+        if is_key_pressed(KeyCode::B) {
+            self.is_building = !self.is_building;
+        }
     }
 
     pub fn draw(&mut self, my_id: u64, game_state: &GameState, assets: &Assets) -> Result<()> {
         clear_background(BLACK);
 
-        let player = game_state.players.iter().find(|p| p.id == my_id);
-
+        let player = self.my_player(my_id, game_state);
         if let Some(p) = player {
-            if whoami::hostname() == "ares" || whoami::hostname() == "spirit" {
+            if whoami::hostname() == "ares" {
                 Self::draw_background(self, p.position().x, p.position().y, p.velocity());
             } else {
-                Self::draw_background2(self, assets, p.position().x, p.position().y);
+                Self::draw_background2(self, assets, p.position().x, p.position().y, p.angle());
             }
 
             let center = Vec2::new(screen_width() as f32 / 2.0, screen_height() as f32 / 2.0);
 
             let self_pos = p.position();
+            let _self_angle = p.angle();
+
+            Self::draw_bounds(self_pos.x, self_pos.y);
 
             for player in &game_state.players {
                 for component in &player.components {
-                    rendering::draw_texture(
-                        assets.malcolm,
-                        center.x - self_pos.x + component.pos.x,
-                        center.y - self_pos.y + component.pos.y,
-                        component.angle,
-                    )
+                    let (x, y) = (
+                        screen_width() / 2. - self_pos.x + component.pos.x,
+                        screen_height() / 2. - self_pos.y + component.pos.y,
+                    );
+                    rendering::draw_texture_centered(assets.malcolm, x, y, component.angle);
+
+                    draw_circle_lines(x, y, 64., 1., GREEN);
+                    draw_circle_lines(x, y, 32., 1., RED);
                 }
             }
 
             for bullet in &game_state.bullets {
-                println!("{} {}", bullet.pos.x, bullet.pos.y);
                 rendering::draw_texture(
                     assets.bullet,
                     center.x - bullet.pos.x,
@@ -104,9 +119,47 @@ impl ClientState {
                     bullet.angle,
                 );
             }
+
+            if self.is_building {
+                let (x, y) = mouse_position();
+                draw_circle_lines(x, y, 32., 1., BLUE)
+            }
         }
 
         Ok(())
+    }
+
+    pub fn my_player<'gs>(&self, my_id: u64, game_state: &'gs GameState) -> Option<&'gs Player> {
+        game_state.players.iter().find(|p| p.id == my_id)
+    }
+
+    fn draw_bounds(player_x: f32, player_y: f32) {
+        let sx = screen_width() / 2.;
+        let sy = screen_height() / 2.;
+
+        let lines = vec![
+            ((0., 0.), (0., constants::WORLD_SIZE)),
+            (
+                (0., constants::WORLD_SIZE),
+                (constants::WORLD_SIZE, constants::WORLD_SIZE),
+            ),
+            (
+                (constants::WORLD_SIZE, constants::WORLD_SIZE),
+                (constants::WORLD_SIZE, 0.),
+            ),
+            ((constants::WORLD_SIZE, 0.), (0., 0.)),
+        ];
+
+        for ((x1, y1), (x2, y2)) in lines {
+            draw_line(
+                sx + x1 - player_x,
+                sy + y1 - player_y,
+                sx + x2 - player_x,
+                sy + y2 - player_y,
+                5.,
+                GREEN,
+            );
+        }
     }
 
     fn draw_background2(
@@ -114,6 +167,7 @@ impl ClientState {
         assets: &Assets,
         player_x: f32,
         player_y: f32,
+        player_angle: f32,
     ) {
         for star in &client_state.stars {
             let star_texture = assets.stars.stars[star.star_index as usize];
