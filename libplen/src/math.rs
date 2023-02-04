@@ -1,11 +1,16 @@
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 use serde_derive::{Serialize, Deserialize};
-use crate::constants;
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct Vec2 {
     pub x: f32,
     pub y: f32,
+}
+
+impl Vec2 {
+    pub fn to_mq(&self) -> macroquad::math::Vec2 {
+        macroquad::math::Vec2 {x: self.x, y: self.y}
+    }
 }
 
 pub fn vec2(x: f32, y: f32) -> Vec2 {

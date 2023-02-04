@@ -16,3 +16,5 @@ strum_macros = "0.16.0"
 bincode = "1.2.0"
 # enum_dispatch = "0.2.0"
 enum-map = "0.6.2"
+macroquad = "0.3"
+rapier2d = {version="0.17.1", features=["simd-stable", "serde-serialize"]}

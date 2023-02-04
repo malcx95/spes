@@ -1,7 +1,6 @@
 use egui_macroquad::egui::emath::exponential_smooth_factor;
 use libplen::constants;
 use libplen::gamestate::GameState;
-use libplen::math::{self, vec2, Vec2};
 use macroquad::prelude::*;
 use macroquad::texture;
 use ::rand::Rng;
@@ -60,7 +59,7 @@ impl ClientState {
         stars
     }
 
-    pub fn update(&mut self, delta_time: f32, game_state: &mut GameState, my_id: u64) {
+    pub fn update(&mut self, _delta_time: f32, _game_state: &mut GameState, _my_id: u64) {
         // update client side stuff
     }
 

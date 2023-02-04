@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 // currently hardcoded to the background image size
 pub const WORLD_SIZE: f32 = 3000.;
 pub const DELTA_TIME: f32 = 0.01;

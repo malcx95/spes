@@ -5,9 +5,6 @@ use std::iter::Iterator;
 
 use serde_derive::{Serialize, Deserialize};
 
-use crate::player;
-use crate::math::Vec2;
-
 pub struct MessageReader {
     pub stream: TcpStream,
     byte_queue: VecDeque<u8>,

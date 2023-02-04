@@ -5,12 +5,14 @@ use std::net::TcpStream;
 use std::time::Instant;
 use std::vec;
 
+use libplen::math::vec2;
+use libplen::player::Component;
+use rapier2d::prelude::*;
 use unicode_truncate::UnicodeTruncateStr;
 
 use libplen::constants;
 use libplen::gamestate;
-use libplen::math::{vec2, Vec2};
-use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage, SoundEffect};
+use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage};
 use libplen::player::Player;
 
 fn send_bytes(bytes: &[u8], stream: &mut TcpStream) -> io::Result<()> {
@@ -46,12 +48,25 @@ struct Client {
     input: ClientInput,
 }
 
+struct PhysicsState {
+    pub rigid_body_set: RigidBodySet,
+    pub collider_set: ColliderSet,
+    pub physics_pipeline: PhysicsPipeline,
+    pub island_manager: IslandManager,
+    pub broad_phase: BroadPhase,
+    pub narrow_phase: NarrowPhase,
+    pub impulse_joint_set: ImpulseJointSet,
+    pub multibody_joint_set: MultibodyJointSet,
+    pub ccd_solver: CCDSolver,
+}
+
 struct Server {
     listener: TcpListener,
     connections: Vec<Client>,
     state: gamestate::GameState,
     next_id: u64,
     last_time: Instant,
+    p: PhysicsState,
 }
 
 impl Server {
@@ -62,12 +77,35 @@ impl Server {
 
         println!("Listening on 0.0.0.0:4444");
 
+        let rigid_body_set = RigidBodySet::new();
+        let collider_set = ColliderSet::new();
+
+        /* Create other structures necessary for the simulation. */
+        let physics_pipeline = PhysicsPipeline::new();
+        let island_manager = IslandManager::new();
+        let broad_phase = BroadPhase::new();
+        let narrow_phase = NarrowPhase::new();
+        let impulse_joint_set = ImpulseJointSet::new();
+        let multibody_joint_set = MultibodyJointSet::new();
+        let ccd_solver = CCDSolver::new();
+
         Self {
             listener,
             connections: vec![],
             next_id: 0,
             last_time: Instant::now(),
             state: gamestate::GameState::new(),
+            p: PhysicsState {
+                rigid_body_set,
+                collider_set,
+                physics_pipeline,
+                island_manager,
+                broad_phase,
+                narrow_phase,
+                impulse_joint_set,
+                multibody_joint_set,
+                ccd_solver,
+            },
         }
     }
 
@@ -80,10 +118,42 @@ impl Server {
         }
         self.last_time = Instant::now();
 
-        self.state.update(delta_time);
+        self.state.update(&mut self.p.rigid_body_set, delta_time);
 
         self.accept_new_connections();
         self.update_clients(delta_time);
+
+        self.p.physics_pipeline.step(
+            &vector![0., 0.],
+            &IntegrationParameters::default(),
+            &mut self.p.island_manager,
+            &mut self.p.broad_phase,
+            &mut self.p.narrow_phase,
+            &mut self.p.rigid_body_set,
+            &mut self.p.collider_set,
+            &mut self.p.impulse_joint_set,
+            &mut self.p.multibody_joint_set,
+            &mut self.p.ccd_solver,
+            None,
+            &(),
+            &(),
+        );
+
+        for player in &mut self.state.players {
+            for component in &mut player.components {
+                component.pos = self
+                    .p
+                    .rigid_body_set
+                    .get(component.physics_handle)
+                    .map(|b| {
+                        let pos = b.position().translation;
+                        vec2(pos.x, pos.y)
+                    })
+                    .expect("Missing physics rigid body for player {player}")
+            }
+
+            player.position = player.components.first().expect("No components for player").pos;
+        }
     }
 
     fn accept_new_connections(&mut self) {
@@ -119,7 +189,7 @@ impl Server {
         }
     }
 
-    fn update_clients(&mut self, delta_time: f32) {
+    fn update_clients(&mut self, _delta_time: f32) {
         // Send data to clients
         let mut clients_to_delete = vec![];
         // let mut sounds_to_play = vec![];
@@ -155,7 +225,31 @@ impl Server {
                             name = "Mr Whitespace".into();
                         }
 
-                        let player = Player::new(client.id, name);
+                        let p = &mut self.p;
+                        let components = [(0., 0.)]
+                            .into_iter()
+                            .map(|(x, y)| {
+                                let rb = RigidBodyBuilder::dynamic()
+                                    // .translation(vector![x, y])
+                                    .build();
+
+                                let collider = ColliderBuilder::ball(64.).restitution(1.0).build();
+
+                                let body_handle = p.rigid_body_set.insert(rb);
+                                p.collider_set.insert_with_parent(
+                                    collider,
+                                    body_handle,
+                                    &mut p.rigid_body_set,
+                                );
+
+                                Component {
+                                    pos: vec2(x, y),
+                                    physics_handle: body_handle,
+                                }
+                            })
+                            .collect();
+
+                        let player = Player::new(client.id, name, components);
                         self.state.add_player(player);
                     }
                     Err(_) => {
@@ -173,10 +267,7 @@ impl Server {
 
             for player in &mut self.state.players {
                 if player.id == client.id {
-                    player.set_input(
-                        client.input.x_input,
-                        client.input.y_input,
-                    );
+                    player.set_input(client.input.x_input, client.input.y_input);
                 }
             }
         }

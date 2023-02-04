@@ -13,7 +13,7 @@ use egui_macroquad::egui::Layout;
 
 use assets::Assets;
 use libplen::gamestate;
-use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage, SoundEffect};
+use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage};
 
 use macroquad::prelude::*;
 
@@ -88,7 +88,7 @@ impl MainState {
             }
         }
 
-        let mut input = Self::read_input();
+        let input = Self::read_input();
 
         self.client_state
             .update(elapsed.as_secs_f32(), &mut self.game_state, self.my_id);
@@ -165,29 +165,25 @@ async fn main() -> Result<()> {
                                 ui.heading("Modules");
                                 ui.add_space(3.0);
 
-                                egui::ScrollArea::both()
+                                egui::ScrollArea::vertical()
                                     .id_source("modules")
                                     .show(ui, |ui| {
-                                        ui.image(
-                                            assets.egui_textures.cannon.texture_id(ctx),
-                                            egui::Vec2{x: 64., y: 64.},
-                                        );
-                                        ui.monospace("Yoloswag")
+                                        ui.with_layout(Layout::left_to_right(Align::LEFT), |ui| {
+                                            ui.image(
+                                                assets.egui_textures.cannon.texture_id(ctx),
+                                                egui::Vec2 { x: 64., y: 64. },
+                                            );
+                                            ui.image(
+                                                assets.egui_textures.cannon.texture_id(ctx),
+                                                egui::Vec2 { x: 64., y: 64. },
+                                            );
+                                            ui.image(
+                                                assets.egui_textures.cannon.texture_id(ctx),
+                                                egui::Vec2 { x: 64., y: 64. },
+                                            );
+                                        })
                                     });
                             });
-
-                            // egui::Frame::none().show(ui, |ui| {
-                            //     ui.heading("Signals");
-                            //     ui.add_space(3.0);
-
-                            //     egui::ScrollArea::both()
-                            //         .id_source("signals")
-                            //         .show(ui, |ui| {
-                            //             if let Some(vcd) = &self.vcd {
-                            //                 self.draw_signal_list(&mut msgs, vcd, ui);
-                            //             }
-                            //         });
-                            // });
                         },
                     )
                 });

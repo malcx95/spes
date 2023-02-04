@@ -2,7 +2,7 @@
 name = "plen"
 version = "0.1.0"
 authors = ["Emil Segerbäck", "Hannes Tuhkala", "Malcolm Wigren", "Frans Skarman", "Robin Sliwa"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -19,6 +19,7 @@ egui-macroquad = "0.12.0"
 image = "0.24.5"
 egui_extras = "0.19"
 color-eyre = "0.6.2"
+rapier2d = {version="0.17.1", features=["simd-stable"]}
 
 [[bin]]
 name = "server"

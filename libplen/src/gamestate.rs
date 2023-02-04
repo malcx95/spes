@@ -1,8 +1,9 @@
 use std::sync::mpsc::Receiver;
 
+use rapier2d::prelude::RigidBodySet;
 use serde_derive::{Serialize, Deserialize};
 
-use crate::player::Player;
+use crate::player::{Player, Component};
 use crate::math::{Vec2, vec2};
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -27,15 +28,16 @@ impl GameState {
      *  vec with positions where lasers are fired
      *  )
      */
-    pub fn update(&mut self, delta: f32) {
+    pub fn update(&mut self, rigid_body_set: &mut RigidBodySet, delta: f32) {
         for player in &mut self.players {
-            player.update(delta);
+            player.update(rigid_body_set, delta);
             println!("{} {}", player.position.x, player.position.y);
         }
     }
 
     pub fn add_player(&mut self, player: Player) {
         self.players.push(player.clone());
+
     }
 
     pub fn get_player_by_id(&self, id: u64) -> Option<&Player> {
