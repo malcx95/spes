@@ -228,14 +228,14 @@ impl Server {
                         }
 
                         let p = &mut self.p;
-                        let components = [(0., 0.), (200., 200.)]
+                        let components = [(0., 0.), (0., 200.)]
                             .into_iter()
                             .map(|(x, y)| {
                                 let rb = RigidBodyBuilder::dynamic()
-                                    // .translation(vector![x, y])
+                                    .translation(vector![x, y])
                                     .build();
 
-                                let collider = ColliderBuilder::ball(64.).restitution(1.0).build();
+                                let collider = ColliderBuilder::ball(32.).restitution(1.0).build();
 
                                 let body_handle = p.rigid_body_set.insert(rb);
                                 p.collider_set.insert_with_parent(
@@ -250,7 +250,22 @@ impl Server {
                                     angle: 0.,
                                 }
                             })
-                            .collect();
+                            .collect::<Vec<_>>();
+
+                        let connections = vec![(0, 1)];
+
+                        for (l, r) in connections {
+                            let joint = FixedJointBuilder::new()
+                                .local_anchor1(point![0.0, 0.0])
+                                .local_anchor2(point![0.0, 64.0]);
+
+                            p.impulse_joint_set.insert(
+                                components[l].physics_handle,
+                                components[r].physics_handle,
+                                joint,
+                                true,
+                            );
+                        }
 
                         let player = Player::new(client.id, name, components);
                         self.state.add_player(player);
