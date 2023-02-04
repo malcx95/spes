@@ -25,6 +25,7 @@ pub struct Stars {
 
 pub struct Assets {
     pub malcolm: Texture2D,
+    pub cannon: Texture2D,
     pub stars: Stars,
     pub egui_textures: EguiTextures,
     pub bullet: Texture2D,
@@ -36,7 +37,8 @@ impl Stars {
             Texture2D::from_file_with_format(include_bytes!("../resources/star1.png"), None),
             Texture2D::from_file_with_format(include_bytes!("../resources/star2.png"), None),
             Texture2D::from_file_with_format(include_bytes!("../resources/star3.png"), None),
-            Texture2D::from_file_with_format(include_bytes!("../resources/star4.png"), None),
+            //FIXME(frans): Star4
+            Texture2D::from_file_with_format(include_bytes!("../resources/star3.png"), None),
         ];
         Stars { stars }
     }
@@ -47,6 +49,10 @@ impl Assets {
         let assets = Assets {
             malcolm: Texture2D::from_file_with_format(
                 include_bytes!("../resources/malcolm.png"),
+                None,
+            ),
+            cannon: Texture2D::from_file_with_format(
+                include_bytes!("../resources/cannon1.png"),
                 None,
             ),
             stars: Stars::new(),

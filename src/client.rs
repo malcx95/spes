@@ -6,6 +6,7 @@ use std::io::prelude::*;
 use std::net::TcpStream;
 use std::time::Instant;
 
+use client_state::ClientState;
 use color_eyre::Result;
 use egui::{Align, Layout, Sense};
 use egui_macroquad::egui::{self, Color32, Rounding, Stroke};
@@ -83,11 +84,17 @@ impl MainState {
 
         let shielding = mouse_right && !self.client_state.is_building;
 
+        let mouse_world = self
+            .client_state
+            .my_player(self.client_state.my_id, &self.game_state)
+            .map(|p| ClientState::mouse_world_pos(p));
+
         ClientInput {
             x_input,
             y_input,
             mouse_x,
             mouse_y,
+            mouse_world,
             shoot,
             mouse_left,
             mouse_right,
@@ -252,6 +259,10 @@ async fn main() -> Result<()> {
                     ui.monospace(format!(
                         "player angle: {:1.3}",
                         player.angle() + std::f32::consts::PI
+                    ));
+                    ui.monospace(format!(
+                        "player mouse_x: {}, mouse_y: {}",
+                        player.mouse_x, player.mouse_y
                     ));
                 });
             });

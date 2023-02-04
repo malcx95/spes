@@ -2,6 +2,7 @@ use serde_derive::{Deserialize, Serialize};
 
 use crate::gamestate::Bullet;
 use crate::math::{vec2, Vec2};
+use crate::messages::ClientInput;
 
 use rapier2d::prelude::*;
 use rapier2d::prelude::{RigidBodyHandle, RigidBodySet};
@@ -21,8 +22,7 @@ pub struct Component {
 pub enum ComponentSpecialization {
     Root,
     Shield,
-    Cannon { cooldown: f32 },
-    AimCannon { cooldown: f32, angle: f32 },
+    Cannon { cooldown: f32, aim: bool },
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -35,6 +35,7 @@ pub struct Player {
 
     pub mouse_x: f32,
     pub mouse_y: f32,
+    pub mouse_world_pos: Option<Vec2>,
 
     pub aim_angle: f32,
 
@@ -120,6 +121,8 @@ impl Player {
             mouse_x: 0.,
             mouse_y: 0.,
 
+            mouse_world_pos: None,
+
             aim_angle: 0.,
 
             components,
@@ -133,23 +136,15 @@ impl Player {
         }
     }
 
-    pub fn set_input(
-        &mut self,
-        input_x: f32,
-        input_y: f32,
-        mouse_x: f32,
-        mouse_y: f32,
-        shoot: bool,
-        aim_angle: f32,
-        shielding: bool,
-    ) {
-        self.input_x = input_x;
-        self.input_y = input_y;
-        self.mouse_x = mouse_x;
-        self.mouse_y = mouse_y;
-        self.shoot = shoot;
-        self.aim_angle = aim_angle;
-        self.shielding = shielding;
+    pub fn set_input(&mut self, i: &ClientInput) {
+        self.input_x = i.x_input;
+        self.input_y = i.y_input;
+        self.mouse_x = i.mouse_x;
+        self.mouse_y = i.mouse_y;
+        self.shoot = i.shoot;
+        self.aim_angle = i.aim_angle;
+        self.shielding = i.shielding;
+        self.mouse_world_pos = i.mouse_world;
     }
 
     pub fn shield_update(&mut self) {
@@ -174,7 +169,10 @@ impl Player {
 
         rb.reset_forces(true);
         rb.reset_torques(true);
-        rb.add_force(rb.position().rotation * vector!(0., -self.input_y) * 1000_000., true);
+        rb.add_force(
+            rb.position().rotation * vector!(0., -self.input_y) * 1000_000.,
+            true,
+        );
         rb.add_torque(self.input_x * 100_0000., true);
         // rb.apply_impulse_at_point(
         //     rb.position().rotation * vector!(0., -self.input_y) * 100_000.,
@@ -200,45 +198,50 @@ impl Player {
             .components
             .iter()
             .filter_map(|c| match c.spec {
-                CS::Cannon { cooldown } if cooldown <= 0.0 && self.shoot => {
+                CS::Cannon { cooldown, aim } if cooldown <= 0.0 && self.shoot => {
                     let rb = rbs.get(c.physics_handle).unwrap();
-                    let rb_angle = rb.rotation().angle();
                     let rb_vel = rb.linvel();
+                    let angle = if aim {
+                        self.mouse_world_pos
+                            .map(|p| std::f32::consts::PI - (p - c.pos).atan2())
+                            .unwrap_or(0.0)
+                    } else {
+                        rb.rotation().angle()
+                    };
                     let rb = RigidBodyBuilder::new(RigidBodyType::KinematicVelocityBased)
                         .translation(rb.translation().clone())
-                        .rotation(rb_angle)
+                        .rotation(angle)
                         .linvel(vector!(
-                            rb_vel.x + (1000. * (rb_angle - std::f32::consts::PI / 2.).cos()),
-                            rb_vel.y + (1000. * (rb_angle - std::f32::consts::PI / 2.).sin())
+                            rb_vel.x + (1000. * (angle - std::f32::consts::PI / 2.).cos()),
+                            rb_vel.y + (1000. * (angle - std::f32::consts::PI / 2.).sin())
                         ))
                         .build();
 
-                    let pos = rb.position().translation;
-                    let angle = rb.position().rotation.angle();
+                    let trans = rb.position().translation;
 
                     let handle = rbs.insert(rb);
 
                     let bullet = Bullet {
                         handle,
                         lifetime: 0.,
-                        pos: vec2(pos.x, pos.y),
+                        pos: vec2(trans.x, trans.y),
                         angle,
                     };
 
                     bullets.push(bullet);
 
                     Some(Component {
-                        spec: CS::Cannon { cooldown: 0.5 },
+                        spec: CS::Cannon { cooldown: 0.5, aim },
                         ..*c
                     })
                 }
-                CS::Cannon { cooldown } => Some(Component {
+                CS::Cannon { cooldown, aim } => Some(Component {
                     spec: CS::Cannon {
                         cooldown: cooldown - delta,
+                        aim,
                     },
                     ..*c
                 }),
-                CS::AimCannon { cooldown, angle } => todo!(),
                 _ => Some(c.clone()),
             })
             .collect();

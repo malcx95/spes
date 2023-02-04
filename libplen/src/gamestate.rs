@@ -1,10 +1,7 @@
 use rapier2d::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{
-    math::{vec2, Vec2},
-    player::Player,
-};
+use crate::{math::Vec2, player::Player};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct GameState {
@@ -68,5 +65,4 @@ impl GameState {
         }
         None
     }
-
 }

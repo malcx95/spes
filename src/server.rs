@@ -277,7 +277,10 @@ impl Server {
                             &mut components,
                         );
                         Self::add_component(
-                            ComponentSpecialization::Cannon { cooldown: 0.0 },
+                            ComponentSpecialization::Cannon {
+                                cooldown: 0.0,
+                                aim: rand::random::<bool>(),
+                            },
                             p,
                             (
                                 constants::WORLD_SIZE / 2.,
@@ -318,13 +321,7 @@ impl Server {
             for player in &mut self.state.players {
                 if player.id == client.id {
                     player.set_input(
-                        client.input.x_input,
-                        client.input.y_input,
-                        client.input.mouse_x,
-                        client.input.mouse_y,
-                        client.input.shoot,
-                        client.input.aim_angle,
-                        client.input.shielding,
+                        &client.input
                     );
                 }
             }

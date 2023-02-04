@@ -1,4 +1,4 @@
-use ::rand::Rng;
+use ::rand::{random, Rng};
 use color_eyre::Result;
 use egui_macroquad::egui::emath::exponential_smooth_factor;
 use libplen::gamestate::GameState;
@@ -18,7 +18,7 @@ pub struct Star {
 }
 
 pub struct ClientState {
-    my_id: u64,
+    pub my_id: u64,
     stars: Vec<Star>,
     stars_material: Material,
     pub is_building: bool,
@@ -90,7 +90,10 @@ impl ClientState {
 
                 client_messages.push(ClientMessage::AddComponent {
                     world_pos: mouse_world_pos,
-                    specialization: ComponentSpecialization::Cannon { cooldown: 0. },
+                    specialization: ComponentSpecialization::Cannon {
+                        cooldown: 0.,
+                        aim: random::<bool>(),
+                    },
                 });
             }
         }
@@ -126,7 +129,7 @@ impl ClientState {
             if whoami::hostname() == "ares" || whoami::hostname() == "spirit" {
                 Self::draw_background(self, p.position().x, p.position().y, p.velocity());
             } else {
-                Self::draw_background2(self, assets, p.position().x, p.position().y, p.angle());
+                Self::draw_background2(self, assets, p.position().x, p.position().y);
             }
 
             let self_pos = p.position();
@@ -145,17 +148,44 @@ impl ClientState {
                 for component in &player.components {
                     let (x, y) = (center.x + component.pos.x, center.y + component.pos.y);
 
-                    let sprite = match component.spec {
-                        ComponentSpecialization::Root => assets.malcolm,
-                        ComponentSpecialization::Shield => assets.stars.stars[0],
-                        ComponentSpecialization::Cannon { .. } => assets.stars.stars[1],
-                        ComponentSpecialization::AimCannon { .. } => assets.stars.stars[2],
+                    use ComponentSpecialization as CS;
+                    let spec = &component.spec;
+                    match spec {
+                        CS::Root | CS::Shield | CS::Cannon { aim: false, .. } => {
+                            let sprite = match spec {
+                                CS::Root => assets.malcolm,
+                                CS::Shield => assets.stars.stars[0],
+                                CS::Cannon { .. } => assets.cannon,
+                            };
+                            draw_circle(x, y, 30.0, YELLOW);
+
+                            rendering::draw_texture_centered(sprite, x, y, component.angle);
+                        }
+                        CS::Cannon { aim: true, .. } => {
+                            draw_circle(x, y, 30.0, GREEN);
+                            let angle = player
+                                .mouse_world_pos
+                                .map(|p| (p - component.pos).atan2())
+                                .unwrap_or(0.0);
+                            let td = assets.cannon.get_texture_data();
+                            rendering::draw_texture_pivot_size(
+                                assets.cannon,
+                                x - td.width() as f32 / 2.0,
+                                y - td.width() as f32 / 2.0,
+                                std::f32::consts::PI - angle,
+                                x,
+                                y,
+                                td.width() as f32,
+                                td.height() as f32,
+                            );
+                        }
                     };
 
-                    rendering::draw_texture_centered(sprite, x, y, component.angle);
-
-                    draw_circle_lines(x, y, 64., 1., GREEN);
-                    draw_circle_lines(x, y, 32., 1., RED);
+                    let debug = false;
+                    if debug {
+                        draw_circle_lines(x, y, 64., 1., GREEN);
+                        draw_circle_lines(x, y, 32., 1., RED);
+                    }
                 }
             }
 
@@ -250,7 +280,6 @@ impl ClientState {
         assets: &Assets,
         player_x: f32,
         player_y: f32,
-        player_angle: f32,
     ) {
         for star in &client_state.stars {
             let star_texture = assets.stars.stars[star.star_index as usize];

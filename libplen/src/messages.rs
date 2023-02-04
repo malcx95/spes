@@ -5,7 +5,7 @@ use std::net::TcpStream;
 
 use serde_derive::{Deserialize, Serialize};
 
-use crate::math;
+use crate::math::{self, Vec2};
 use crate::player::ComponentSpecialization;
 
 pub struct MessageReader {
@@ -97,6 +97,8 @@ pub struct ClientInput {
     pub mouse_x: f32,
     pub mouse_y: f32,
 
+    pub mouse_world: Option<Vec2>,
+
     pub shoot: bool,
     pub aim_angle: f32,
 
@@ -112,6 +114,7 @@ impl ClientInput {
             y_input: 0.,
             mouse_x: 0.,
             mouse_y: 0.,
+            mouse_world: None,
             shoot: false,
             aim_angle: 0.,
             mouse_left: false,
