@@ -87,7 +87,7 @@ impl MainState {
         let mut input = Self::read_input();
 
         self.client_state
-            .update(elapsed.as_secs_f32(), &self.game_state, self.my_id);
+            .update(elapsed.as_secs_f32(), &mut self.game_state, self.my_id);
 
         let input_message = ClientMessage::Input(input);
         send_client_message(&input_message, &mut server_reader.stream);

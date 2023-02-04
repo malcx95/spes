@@ -7,28 +7,45 @@ use macroquad::texture;
 use crate::assets::Assets;
 
 pub struct ClientState {
+    stars_material: macroquad::material::Material,
     // add client side state
 }
 
+const STARS_VERT: &str = include_str!("./shaders/stars.vert");
+const STARS_FRAG: &str = include_str!("./shaders/stars.frag");
+
 impl ClientState {
     pub fn new() -> ClientState {
+        let stars_material = macroquad::material::load_material(
+            STARS_VERT,
+            STARS_FRAG,
+            macroquad::material::MaterialParams {
+                pipeline_params: Default::default(),
+                uniforms: vec![
+                    ("window_dimensions".into(), UniformType::Float2),
+                    ("player".into(), UniformType::Float2),
+                ],
+                textures: vec![],
+            },
+        )
+        .unwrap();
+
         ClientState {
-            // init client stuff
+            stars_material, // init client stuff
         }
     }
 
-    pub fn update(&mut self, delta_time: f32, game_state: &GameState, my_id: u64) {
+    pub fn update(&mut self, delta_time: f32, game_state: &mut GameState, my_id: u64) {
         // update client side stuff
     }
 
     pub fn draw(
-        &self,
+        &mut self,
         my_id: u64,
         game_state: &GameState,
         assets: &mut Assets,
     ) -> Result<(), String> {
-
-        clear_background(BLACK);
+        Self::draw_background(self);
 
         draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
         draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
@@ -52,5 +69,16 @@ impl ClientState {
         }
 
         Ok(())
+    }
+
+    fn draw_background(client_state: &mut ClientState) {
+        clear_background(BLACK);
+
+        let mut mat = &client_state.stars_material;
+        mat.set_uniform("window_dimensions", (screen_width(), screen_height()));
+        mat.set_uniform("player", (get_time() as f32, get_time() as f32 / 2.));
+        gl_use_material(*mat);
+        draw_cube((0., 0.0, 0.0).into(), (2.0, 2.0, 0.0).into(), None, WHITE);
+        gl_use_default_material();
     }
 }
