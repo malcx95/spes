@@ -6,8 +6,8 @@ use egui_macroquad::egui::{self};
 
 use macroquad::texture::*;
 
-fn load_image_from_path(path: &std::path::Path) -> Result<egui::ColorImage, image::ImageError> {
-    let image = image::io::Reader::open(path)?.decode()?;
+fn load_image_from_path(bytes: &[u8]) -> Result<egui::ColorImage, image::ImageError> {
+    let image = image::load_from_memory(bytes)?;
     let size = [image.width() as _, image.height() as _];
     let image_buffer = image.to_rgba8();
     let pixels = image_buffer.as_flat_samples();
@@ -52,7 +52,7 @@ impl Assets {
             egui_textures: EguiTextures {
                 cannon: RetainedImage::from_color_image(
                     "egui",
-                    load_image_from_path(&PathBuf::from("resources/cannon1.png"))?,
+                    load_image_from_path(include_bytes!("../resources/cannon1.png"))?,
                 ),
             },
         };
