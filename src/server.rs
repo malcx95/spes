@@ -229,7 +229,7 @@ impl Server {
                         }
 
                         let p = &mut self.p;
-                        let components = [(0., 0.)]
+                        let components = [(0., 0.), (200., 200.)]
                             .into_iter()
                             .map(|(x, y)| {
                                 let rb = RigidBodyBuilder::dynamic()
