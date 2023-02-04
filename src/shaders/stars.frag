@@ -2,7 +2,7 @@
 
 #define CHUNK 80
 #define LAYERS 6
-#define PIXELATE 3
+#define PIXELATE 1
 
 layout (location = 0) out vec4 color;
 
@@ -21,9 +21,10 @@ vec3 star(vec2 uv) {
     float dist = length(uv);
     float glow = 0.005 / dist;
 
-    float ray = max(0.0, 1.0 - abs(uv.x * uv.y * 500.0)) * smoothstep(0.4, 0.1, dist);
+    // float ray = max(0.0, 1.0 - abs(uv.x * uv.y * 500.0)) * smoothstep(0.4, 0.1, dist);
 
-    vec3 color = vec3(glow + ray);
+    // vec3 color = vec3(glow + ray);
+    vec3 color = vec3(glow, glow, glow);
 
     return color;
 }
