@@ -211,6 +211,23 @@ async fn main() -> Result<()> {
                         Color32::RED,
                     );
                 });
+                egui::Window::new("debug").show(ctx, |ui| {
+                    let player = main_state
+                        .client_state
+                        .my_player(main_state.my_id, &main_state.game_state)
+                        .unwrap();
+                    ui.style_mut().wrap = Some(false);
+                    ui.monospace(format!(
+                        "player position: x: {:4.0}, y: {:4.0}",
+                        player.position().x,
+                        player.position().y
+                    ));
+                    ui.monospace(format!("player velocity: {}", player.velocity()));
+                    ui.monospace(format!(
+                        "player angle: {:1.3}",
+                        player.angle() + std::f32::consts::PI
+                    ))
+                });
             });
 
             // Draw things before egui
