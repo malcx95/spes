@@ -28,6 +28,7 @@ fn send_client_message(msg: &ClientMessage, stream: &mut TcpStream) {
         .expect("Failed to send message to server");
 }
 
+#[allow(unused)]
 #[derive(PartialEq)]
 enum StateResult {
     Continue,

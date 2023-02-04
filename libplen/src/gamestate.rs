@@ -1,10 +1,8 @@
-use std::sync::mpsc::Receiver;
 
 use rapier2d::prelude::RigidBodySet;
 use serde_derive::{Serialize, Deserialize};
 
-use crate::player::{Player, Component};
-use crate::math::{Vec2, vec2};
+use crate::player::{Player};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct GameState {

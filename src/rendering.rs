@@ -15,6 +15,7 @@ pub fn draw_texture(texture: texture::Texture2D, x: f32, y: f32, angle: f32) {
 }
 
 
+/*
 pub fn draw_texture_pivot(texture: texture::Texture2D, x: f32, y: f32, angle: f32, pivot_x: f32, pivot_y: f32) {
     let params = texture::DrawTextureParams {
         dest_size: None,
@@ -26,6 +27,7 @@ pub fn draw_texture_pivot(texture: texture::Texture2D, x: f32, y: f32, angle: f3
     };
     texture::draw_texture_ex(texture, x, y, WHITE, params);
 }
+*/
 
 
 pub fn draw_texture_pivot_size(texture: texture::Texture2D, x: f32, y: f32, angle: f32, pivot_x: f32, pivot_y: f32, size_x: f32, size_y: f32) {

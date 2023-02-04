@@ -1,8 +1,6 @@
-use egui_macroquad::egui::emath::exponential_smooth_factor;
 use libplen::constants;
 use libplen::gamestate::GameState;
 use macroquad::prelude::*;
-use macroquad::texture;
 use ::rand::Rng;
 use color_eyre::Result;
 
@@ -17,32 +15,12 @@ pub struct Star {
 }
 
 pub struct ClientState {
-    stars_material: macroquad::material::Material,
     stars: Vec<Star>,
 }
 
-const STARS_VERT: &str = include_str!("./shaders/stars.vert");
-const STARS_FRAG: &str = include_str!("./shaders/stars.frag");
-
 impl ClientState {
     pub fn new() -> ClientState {
-        let stars_material = macroquad::material::load_material(
-            STARS_VERT,
-            STARS_FRAG,
-            macroquad::material::MaterialParams {
-                pipeline_params: Default::default(),
-                uniforms: vec![
-                    ("window_dimensions".into(), UniformType::Float2),
-                    ("player".into(), UniformType::Float2),
-                    ("global_scale".into(), UniformType::Float1),
-                ],
-                textures: vec![],
-            },
-        )
-        .unwrap();
-
         ClientState {
-            stars_material, // init client stuff
             stars: Self::init_stars(),
         }
     }
@@ -50,7 +28,7 @@ impl ClientState {
     fn init_stars() -> Vec<Star> {
         let mut stars = vec![];
         let mut rng = ::rand::thread_rng();
-        for i in 0..constants::NUM_STARS {
+        for _ in 0..constants::NUM_STARS {
             let x = rng.gen_range((-constants::WORLD_SIZE)..(2.*constants::WORLD_SIZE));
             let y = rng.gen_range((-constants::WORLD_SIZE)..(2.*constants::WORLD_SIZE));
             let i = rng.gen_range(0..2);
@@ -81,8 +59,7 @@ impl ClientState {
         draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
         draw_text("HELLO", 20.0, 20.0, 20.0, DARKGRAY);
 
-        for player in &game_state.players {
-
+        for _player in &game_state.players {
             let px = screen_width() / 2.;
             let py = screen_height() / 2.;
 
@@ -98,7 +75,7 @@ impl ClientState {
         player_x: f32,
         player_y: f32,
         player_angle: f32,
-        player_speed: f32,
+        _player_speed: f32,
     ) {
         for star in &client_state.stars {
             let star_texture = assets.stars.stars[star.star_index as usize];
@@ -108,6 +85,7 @@ impl ClientState {
         }
     }
 
+    /*
     fn draw_background(
         client_state: &mut ClientState,
         player_x: f32,
@@ -125,4 +103,5 @@ impl ClientState {
         draw_cube((0., 0.0, 0.0).into(), (2.0, 2.0, 0.0).into(), None, WHITE);
         gl_use_default_material();
     }
+    */
 }
