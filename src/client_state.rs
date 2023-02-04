@@ -88,18 +88,13 @@ impl ClientState {
                 for component in &player.components {
                     rendering::draw_texture(
                         assets.malcolm,
-                        screen_width() / 2. + self_pos.x - component.pos.x,
-                        screen_height() / 2. + self_pos.y - component.pos.y,
+                        screen_width() / 2. - self_pos.x + component.pos.x,
+                        screen_height() / 2. - self_pos.y + component.pos.y,
                         component.angle,
                     )
                 }
             }
         }
-
-        draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
-        draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
-        draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
-        draw_text("HELLO", 20.0, 20.0, 20.0, DARKGRAY);
 
         Ok(())
     }
