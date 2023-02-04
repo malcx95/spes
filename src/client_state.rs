@@ -3,7 +3,7 @@ use color_eyre::Result;
 use egui_macroquad::egui::emath::exponential_smooth_factor;
 use libplen::gamestate::GameState;
 use libplen::messages::ClientMessage;
-use libplen::player::Player;
+use libplen::player::{ComponentSpecialization, Player};
 use libplen::{constants, math};
 use macroquad::prelude::*;
 
@@ -90,6 +90,7 @@ impl ClientState {
 
                 client_messages.push(ClientMessage::AddComponent {
                     world_pos: mouse_world_pos,
+                    specialization: ComponentSpecialization::Cannon { cooldown: 0. },
                 });
             }
         }
@@ -143,7 +144,15 @@ impl ClientState {
 
                 for component in &player.components {
                     let (x, y) = (center.x + component.pos.x, center.y + component.pos.y);
-                    rendering::draw_texture_centered(assets.malcolm, x, y, component.angle);
+
+                    let sprite = match component.spec {
+                        ComponentSpecialization::Root => assets.malcolm,
+                        ComponentSpecialization::Shield => assets.stars.stars[0],
+                        ComponentSpecialization::Cannon { .. } => assets.stars.stars[1],
+                        ComponentSpecialization::AimCannon { .. } => assets.stars.stars[2],
+                    };
+
+                    rendering::draw_texture_centered(sprite, x, y, component.angle);
 
                     draw_circle_lines(x, y, 64., 1., GREEN);
                     draw_circle_lines(x, y, 32., 1., RED);

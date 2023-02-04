@@ -14,6 +14,15 @@ pub struct Component {
     pub pos: Vec2,
     pub angle: f32,
     pub physics_handle: RigidBodyHandle,
+    pub spec: ComponentSpecialization,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum ComponentSpecialization {
+    Root,
+    Shield,
+    Cannon { cooldown: f32 },
+    AimCannon { cooldown: f32, angle: f32 },
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -150,7 +159,7 @@ impl Player {
     pub fn update(
         &mut self,
         rigid_body_set: &mut RigidBodySet,
-        _delta_time: f32,
+        delta: f32,
         bullets: &mut Vec<Bullet>,
     ) {
         let root_handle = self
@@ -171,39 +180,64 @@ impl Player {
 
         rb.apply_torque_impulse(self.input_x * 100_000., true);
 
-        if self.shoot {
-            self.shoot(rigid_body_set, bullets);
-        }
+        self.update_components(rigid_body_set, bullets, delta);
 
         self.shield_update();
     }
 
-    pub fn shoot(&mut self, rbs: &mut RigidBodySet, bullets: &mut Vec<Bullet>) {
-        let player_rb = rbs.get(self.core().physics_handle).unwrap();
-        let player_angle = player_rb.rotation().angle();
-        let player_vel = player_rb.linvel();
-        let rb = RigidBodyBuilder::new(RigidBodyType::KinematicVelocityBased)
-            .translation(player_rb.translation().clone())
-            .rotation(player_angle)
-            .linvel(vector!(
-                player_vel.x + (1000. * (player_angle - std::f32::consts::PI / 2.).cos()),
-                player_vel.y + (1000. * (player_angle - std::f32::consts::PI / 2.).sin())
-            ))
-            .build();
+    pub fn update_components(
+        &mut self,
+        rbs: &mut RigidBodySet,
+        bullets: &mut Vec<Bullet>,
+        delta: f32,
+    ) {
+        use ComponentSpecialization as CS;
+        self.components = self
+            .components
+            .iter()
+            .filter_map(|c| match c.spec {
+                CS::Cannon { cooldown } if cooldown <= 0.0 && self.shoot => {
+                    let rb = rbs.get(c.physics_handle).unwrap();
+                    let rb_angle = rb.rotation().angle();
+                    let rb_vel = rb.linvel();
+                    let rb = RigidBodyBuilder::new(RigidBodyType::KinematicVelocityBased)
+                        .translation(rb.translation().clone())
+                        .rotation(rb_angle)
+                        .linvel(vector!(
+                            rb_vel.x + (1000. * (rb_angle - std::f32::consts::PI / 2.).cos()),
+                            rb_vel.y + (1000. * (rb_angle - std::f32::consts::PI / 2.).sin())
+                        ))
+                        .build();
 
-        let pos = rb.position().translation;
-        let angle = rb.position().rotation.angle();
+                    let pos = rb.position().translation;
+                    let angle = rb.position().rotation.angle();
 
-        let handle = rbs.insert(rb);
+                    let handle = rbs.insert(rb);
 
-        let bullet = Bullet {
-            handle,
-            lifetime: 0.,
-            pos: vec2(pos.x, pos.y),
-            angle,
-        };
+                    let bullet = Bullet {
+                        handle,
+                        lifetime: 0.,
+                        pos: vec2(pos.x, pos.y),
+                        angle,
+                    };
 
-        bullets.push(bullet);
+                    bullets.push(bullet);
+
+                    Some(Component {
+                        spec: CS::Cannon { cooldown: 0.5 },
+                        ..*c
+                    })
+                }
+                CS::Cannon { cooldown } => Some(Component {
+                    spec: CS::Cannon {
+                        cooldown: cooldown - delta,
+                    },
+                    ..*c
+                }),
+                CS::AimCannon { cooldown, angle } => todo!(),
+                _ => Some(c.clone()),
+            })
+            .collect();
     }
 
     pub fn core(&self) -> &Component {

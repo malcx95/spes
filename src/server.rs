@@ -7,6 +7,7 @@ use std::vec;
 
 use libplen::math::vec2;
 use libplen::player::Component;
+use libplen::player::ComponentSpecialization;
 use rapier2d::prelude::*;
 use unicode_truncate::UnicodeTruncateStr;
 
@@ -270,11 +271,13 @@ impl Server {
 
                         let mut components = vec![];
                         Self::add_component(
+                            ComponentSpecialization::Root,
                             p,
                             (constants::WORLD_SIZE / 2., constants::WORLD_SIZE / 2.),
                             &mut components,
                         );
                         Self::add_component(
+                            ComponentSpecialization::Cannon { cooldown: 0.0 },
                             p,
                             (
                                 constants::WORLD_SIZE / 2.,
@@ -286,9 +289,13 @@ impl Server {
                         let player = Player::new(client.id, name, components);
                         self.state.add_player(player);
                     }
-                    Ok(ClientMessage::AddComponent { world_pos }) => {
+                    Ok(ClientMessage::AddComponent {
+                        world_pos,
+                        specialization,
+                    }) => {
                         for player in self.state.players.iter_mut().filter(|p| p.id == client.id) {
                             Self::add_component(
+                                specialization.clone(),
                                 p,
                                 (world_pos.x, world_pos.y),
                                 &mut player.components,
@@ -341,6 +348,7 @@ impl Server {
     }
 
     fn add_component(
+        specialization: ComponentSpecialization,
         p: &mut PhysicsState,
         (world_x, world_y): (f32, f32),
         components: &mut Vec<Component>,
@@ -359,6 +367,7 @@ impl Server {
             pos: vec2(world_x, world_y),
             physics_handle: body_handle,
             angle: 0.,
+            spec: specialization,
         };
 
         components.push(new);

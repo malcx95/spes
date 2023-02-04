@@ -6,6 +6,7 @@ use std::net::TcpStream;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::math;
+use crate::player::ComponentSpecialization;
 
 pub struct MessageReader {
     pub stream: TcpStream,
@@ -123,6 +124,11 @@ impl ClientInput {
 #[derive(Serialize, Deserialize)]
 pub enum ClientMessage {
     Input(ClientInput),
-    AddComponent{world_pos: math::Vec2},
-    JoinGame { name: String },
+    AddComponent {
+        world_pos: math::Vec2,
+        specialization: ComponentSpecialization,
+    },
+    JoinGame {
+        name: String,
+    },
 }
