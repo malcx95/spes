@@ -84,6 +84,9 @@ pub enum ServerMessage {
 pub struct ClientInput {
     pub x_input: f32,
     pub y_input: f32,
+
+    pub mouse_x: f32,
+    pub mouse_y: f32,
 }
 
 impl ClientInput {
@@ -91,6 +94,8 @@ impl ClientInput {
         ClientInput {
             x_input: 0.,
             y_input: 0.,
+            mouse_x: 0.,
+            mouse_y: 0.,
         }
     }
 }

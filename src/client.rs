@@ -69,7 +69,9 @@ impl MainState {
             x_input += 1.0;
         }
 
-        ClientInput { x_input, y_input }
+        let (mouse_x, mouse_y) = mouse_position();
+
+        ClientInput { x_input, y_input, mouse_x, mouse_y }
     }
 
     fn update(
