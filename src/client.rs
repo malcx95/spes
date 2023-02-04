@@ -6,6 +6,9 @@ use std::net::TcpStream;
 use std::time::Instant;
 
 use assets::Assets;
+use egui_macroquad::egui;
+use egui_macroquad::egui::Align;
+use egui_macroquad::egui::Layout;
 use libplen::constants;
 use libplen::gamestate;
 use libplen::math::{vec2, Vec2};
@@ -148,6 +151,51 @@ async fn main() -> Result<(), String> {
             main_state.update(&mut reader);
 
             main_state.draw(&mut assets)?;
+
+            // Process keys, mouse etc.
+
+            egui_macroquad::ui(|ctx| {
+                egui::TopBottomPanel::bottom("signal select left panel")
+                    .show(ctx, |ui| {
+                        ui.with_layout(
+                            Layout::top_down(Align::LEFT).with_cross_justify(true),
+                            |ui| {
+                                let total_space = ui.available_height();
+
+                                egui::Frame::none().show(ui, |ui| {
+                                    ui.set_max_height(total_space / 2.);
+                                    ui.set_min_height(total_space / 2.);
+
+                                    ui.heading("Modules");
+                                    ui.add_space(3.0);
+
+                                    egui::ScrollArea::both()
+                                        .id_source("modules")
+                                        .show(ui, |ui| {
+                                            ui.monospace("Yoloswag")
+                                        });
+                                });
+
+                                // egui::Frame::none().show(ui, |ui| {
+                                //     ui.heading("Signals");
+                                //     ui.add_space(3.0);
+
+                                //     egui::ScrollArea::both()
+                                //         .id_source("signals")
+                                //         .show(ui, |ui| {
+                                //             if let Some(vcd) = &self.vcd {
+                                //                 self.draw_signal_list(&mut msgs, vcd, ui);
+                                //             }
+                                //         });
+                                // });
+                            },
+                        )
+                    });
+            });
+
+            // Draw things before egui
+
+            egui_macroquad::draw();
 
             next_frame().await;
         }
