@@ -113,6 +113,16 @@ pub fn modulo(x: f32, div: f32) -> f32 {
 }
 
 
+pub fn cap(x: f32, max: f32, min: f32) -> f32 {
+    if x < min {
+        min
+    } else if x > max {
+        max
+    } else {
+        x
+    }
+}
+
 pub fn angle_diff(source_angle: f32, target_angle: f32) -> f32 {
     // From https://stackoverflow.com/a/7869457
     use std::f32::consts::PI;

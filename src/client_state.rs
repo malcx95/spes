@@ -18,6 +18,7 @@ pub struct Star {
 }
 
 pub struct ClientState {
+    my_id: u64,
     stars: Vec<Star>,
     stars_material: Material,
 }
@@ -26,7 +27,7 @@ const STARS_VERT: &str = include_str!("./shaders/stars.vert");
 const STARS_FRAG: &str = include_str!("./shaders/stars.frag");
 
 impl ClientState {
-    pub fn new() -> ClientState {
+    pub fn new(my_id: u64) -> ClientState {
         let stars_material = macroquad::material::load_material(
             STARS_VERT,
             STARS_FRAG,
@@ -43,6 +44,7 @@ impl ClientState {
         .unwrap();
 
         ClientState {
+            my_id,
             stars: Self::init_stars(),
             stars_material,
         }
@@ -78,19 +80,26 @@ impl ClientState {
             } else {
                 Self::draw_background2(self, assets, p.position().x, p.position().y, p.angle());
             }
+
+            let self_pos = p.position();
+            let self_angle = p.angle();
+
+            for player in &game_state.players {
+                for component in &player.components {
+                    rendering::draw_texture(
+                        assets.malcolm,
+                        screen_width() / 2. + self_pos.x - component.pos.x,
+                        screen_height() / 2. + self_pos.y - component.pos.y,
+                        component.angle,
+                    )
+                }
+            }
         }
 
         draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
         draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
         draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
         draw_text("HELLO", 20.0, 20.0, 20.0, DARKGRAY);
-
-        for _player in &game_state.players {
-            let px = screen_width() / 2.;
-            let py = screen_height() / 2.;
-
-            rendering::draw_texture(assets.malcolm, px, py, 0.);
-        }
 
         Ok(())
     }
@@ -110,7 +119,7 @@ impl ClientState {
                 star_texture,
                 star.x - player_x,
                 star.y - player_y,
-                -player_angle,
+                0., // -player_angle,
                 pivot_x,
                 pivot_y,
                 20.,

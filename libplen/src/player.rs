@@ -54,7 +54,7 @@ impl Player {
             .expect(&format!("No rigid body for player {}", self.id));
 
         rb.apply_impulse_at_point(
-            rb.position().rotation * vector!(self.input_y, 0.) * 100_000.,
+            rb.position().rotation * vector!(0., -self.input_y) * 100_000.,
             rb.position().translation.vector.into(),
             true,
         );

@@ -47,7 +47,7 @@ impl MainState {
         MainState {
             my_id,
             game_state: gamestate::GameState::new(),
-            client_state: client_state::ClientState::new(),
+            client_state: client_state::ClientState::new(my_id),
             last_time: Instant::now(),
         }
     }
