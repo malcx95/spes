@@ -141,18 +141,21 @@ impl Server {
 
         for player in &mut self.state.players {
             for component in &mut player.components {
-                component.pos = self
+                let rb = self
                     .p
                     .rigid_body_set
                     .get(component.physics_handle)
-                    .map(|b| {
-                        let pos = b.position().translation;
-                        vec2(pos.x, pos.y)
-                    })
-                    .expect("Missing physics rigid body for player {player}")
-            }
+                    .expect("Missing physics rigid body for player {player}");
 
-            player.position = player.components.first().expect("No components for player").pos;
+                let pos = rb.position();
+
+                let trans = pos.translation;
+                let rot = pos.rotation;
+
+                component.pos = vec2(trans.x, trans.y);
+                component.angle = rot.angle();
+
+            }
         }
     }
 
@@ -245,6 +248,7 @@ impl Server {
                                 Component {
                                     pos: vec2(x, y),
                                     physics_handle: body_handle,
+                                    angle: 0.
                                 }
                             })
                             .collect();

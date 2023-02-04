@@ -29,7 +29,8 @@ impl GameState {
     pub fn update(&mut self, rigid_body_set: &mut RigidBodySet, delta: f32) {
         for player in &mut self.players {
             player.update(rigid_body_set, delta);
-            println!("{} {}", player.position.x, player.position.y);
+            println!("{} {}", player.position().x, player.position().y);
+            println!("{}", player.angle());
         }
     }
 

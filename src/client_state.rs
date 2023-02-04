@@ -1,8 +1,8 @@
+use ::rand::Rng;
+use color_eyre::Result;
 use libplen::constants;
 use libplen::gamestate::GameState;
 use macroquad::prelude::*;
-use ::rand::Rng;
-use color_eyre::Result;
 
 use crate::assets::Assets;
 
@@ -29,10 +29,14 @@ impl ClientState {
         let mut stars = vec![];
         let mut rng = ::rand::thread_rng();
         for _ in 0..constants::NUM_STARS {
-            let x = rng.gen_range((-constants::WORLD_SIZE)..(2.*constants::WORLD_SIZE));
-            let y = rng.gen_range((-constants::WORLD_SIZE)..(2.*constants::WORLD_SIZE));
+            let x = rng.gen_range((-constants::WORLD_SIZE)..(2. * constants::WORLD_SIZE));
+            let y = rng.gen_range((-constants::WORLD_SIZE)..(2. * constants::WORLD_SIZE));
             let i = rng.gen_range(0..2);
-            stars.push(Star { x, y, star_index: i });
+            stars.push(Star {
+                x,
+                y,
+                star_index: i,
+            });
         }
         stars
     }
@@ -41,17 +45,12 @@ impl ClientState {
         // update client side stuff
     }
 
-    pub fn draw(
-        &mut self,
-        my_id: u64,
-        game_state: &GameState,
-        assets: &Assets,
-    ) -> Result<()> {
+    pub fn draw(&mut self, my_id: u64, game_state: &GameState, assets: &Assets) -> Result<()> {
         clear_background(BLACK);
 
         let player = game_state.players.iter().find(|p| p.id == my_id);
         if let Some(p) = player {
-            Self::draw_background2(self, assets, p.position.x, p.position.y, p.angle, p.speed);
+            Self::draw_background2(self, assets, p.position().x, p.position().y, p.angle());
         }
 
         draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
@@ -75,13 +74,21 @@ impl ClientState {
         player_x: f32,
         player_y: f32,
         player_angle: f32,
-        _player_speed: f32,
     ) {
         for star in &client_state.stars {
             let star_texture = assets.stars.stars[star.star_index as usize];
             let pivot_x = screen_width() / 2.;
             let pivot_y = screen_height() / 2.;
-            rendering::draw_texture_pivot_size(star_texture, star.x - player_x, star.y - player_y, -player_angle, pivot_x, pivot_y, 20., 20.);
+            rendering::draw_texture_pivot_size(
+                star_texture,
+                star.x - player_x,
+                star.y - player_y,
+                -player_angle,
+                pivot_x,
+                pivot_y,
+                20.,
+                20.,
+            );
         }
     }
 

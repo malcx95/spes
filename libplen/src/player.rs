@@ -1,18 +1,14 @@
 use serde_derive::{Serialize, Deserialize};
 
-use crate::math::{Vec2, vec2};
-use std::f32::consts::PI;
+use crate::math::Vec2;
 
 use rapier2d::prelude::*;
 use rapier2d::prelude::{RigidBodyHandle, RigidBodySet};
 
-const PLAYER_ANGLE_SPEED: f32 = 0.01;
-const PLAYER_ANGLE_OFFSET: f32 = PI / 2.;
-const PLAYER_FORWARD_INERTIA: f32 = 5.0;
-
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Component {
     pub pos: Vec2,
+    pub angle: f32,
     pub physics_handle: RigidBodyHandle,
 }
 
@@ -23,10 +19,6 @@ pub struct Player {
 
     pub input_x: f32,
     pub input_y: f32,
-
-    pub position: Vec2,
-    pub angle: f32,
-    pub speed: f32,
 
     pub components: Vec<Component>,
 }
@@ -40,10 +32,6 @@ impl Player {
             input_x: 0.,
             input_y: 0.,
 
-            position: vec2(0., 0.),
-            angle: 0.,
-            speed: 0.,
-
             components,
         }
     }
@@ -53,13 +41,7 @@ impl Player {
         self.input_y = input_y;
     }
 
-    pub fn update(&mut self, rigid_body_set: &mut RigidBodySet, delta_time: f32) {
-        self.angle += self.input_x * PLAYER_ANGLE_SPEED;
-        self.speed += self.input_y * PLAYER_FORWARD_INERTIA;
-
-        self.position += Vec2::from_direction(self.angle - PLAYER_ANGLE_OFFSET, self.speed * delta_time);
-        // self.position += Vec2::from_direction(self.angle, self.speed * delta_time);
-
+    pub fn update(&mut self, rigid_body_set: &mut RigidBodySet, _delta_time: f32) {
         let root_handle = self
             .components
             .first()
@@ -67,9 +49,27 @@ impl Player {
             .physics_handle;
 
         println!("{}", self.input_y);
+        let rb = 
         rigid_body_set
             .get_mut(root_handle)
-            .expect(&format!("No rigid body for player {}", self.id))
-            .apply_impulse_at_point(vector!(self.input_y, 0.)*100., point![0., 0.], true);
+            .expect(&format!("No rigid body for player {}", self.id));
+
+        rb
+            .apply_impulse_at_point(
+                rb.position().rotation * vector!(self.input_y, 0.)*100_000.,
+                rb.position().translation.vector.into(),
+                true
+            );
+
+        rb.apply_torque_impulse(self.input_x * 100_000., true)
+
+    }
+
+    pub fn position(&self) -> Vec2 {
+        self.components.first().expect("Player had no components").pos
+    }
+
+    pub fn angle(&self) -> f32 {
+        self.components.first().expect("Player had no components").angle
     }
 }
