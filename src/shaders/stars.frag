@@ -1,7 +1,7 @@
 #version 450
 
 #define CHUNK 40
-#define LAYERS 2
+#define LAYERS 6
 #define PIXELATE 1
 
 layout (location = 0) out vec4 color;

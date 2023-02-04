@@ -75,14 +75,13 @@ impl ClientState {
 
         let player = game_state.players.iter().find(|p| p.id == my_id);
         if let Some(p) = player {
-            if whoami::hostname() == "ares" {
+            if whoami::hostname() == "ares" || whoami::hostname() == "spirit" {
                 Self::draw_background(self, p.position().x, p.position().y, p.velocity());
             } else {
-                Self::draw_background2(self, assets, p.position().x, p.position().y, p.angle());
+                Self::draw_background2(self, assets, p.position().x, p.position().y);
             }
 
             let self_pos = p.position();
-            let self_angle = p.angle();
 
             for player in &game_state.players {
                 for component in &player.components {
@@ -104,7 +103,6 @@ impl ClientState {
         assets: &Assets,
         player_x: f32,
         player_y: f32,
-        player_angle: f32,
     ) {
         for star in &client_state.stars {
             let star_texture = assets.stars.stars[star.star_index as usize];
