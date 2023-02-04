@@ -1,7 +1,8 @@
 #version 450
 
-#define CHUNK 80
-#define LAYERS 3
+#define CHUNK 120
+#define LAYERS 6
+#define PIXELATE 3
 
 layout (location = 0) out vec4 color;
 
@@ -58,6 +59,8 @@ void main() {
 
     for (float i = (1.0 / LAYERS); i < 1; i += 1.0 / (LAYERS - 1)) {
         vec2 uvp = uv + (player * (100 * i)) + (vec2(77, 31) * (3 + i * 70));
+
+        uvp = PIXELATE * floor(uvp / PIXELATE);
 
         vec2 id = floor(uvp / CHUNK);
         vec2 gr = fract(uvp / CHUNK) - 0.5;

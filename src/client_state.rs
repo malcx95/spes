@@ -45,7 +45,10 @@ impl ClientState {
         game_state: &GameState,
         assets: &mut Assets,
     ) -> Result<(), String> {
-        Self::draw_background(self);
+        let player = game_state.players.iter().find(|p|p.id == my_id);
+        if let Some(p) = player {
+        Self::draw_background(self, p.position.x, p.position.y);
+        }
 
         draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
         draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
@@ -71,12 +74,12 @@ impl ClientState {
         Ok(())
     }
 
-    fn draw_background(client_state: &mut ClientState) {
+    fn draw_background(client_state: &mut ClientState, player_x: f32, player_y: f32) {
         clear_background(BLACK);
 
-        let mut mat = &client_state.stars_material;
+        let mat = &client_state.stars_material;
         mat.set_uniform("window_dimensions", (screen_width(), screen_height()));
-        mat.set_uniform("player", (get_time() as f32, get_time() as f32 / 2.));
+        mat.set_uniform("player", (player_x / 100.0, -player_y / 100.0));
         gl_use_material(*mat);
         draw_cube((0., 0.0, 0.0).into(), (2.0, 2.0, 0.0).into(), None, WHITE);
         gl_use_default_material();
