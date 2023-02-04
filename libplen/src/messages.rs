@@ -1,9 +1,9 @@
-use std::io::{self, prelude::*};
-use std::net::TcpStream;
 use std::collections::VecDeque;
+use std::io::{self, prelude::*};
 use std::iter::Iterator;
+use std::net::TcpStream;
 
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 
 pub struct MessageReader {
     pub stream: TcpStream,
@@ -11,7 +11,7 @@ pub struct MessageReader {
 }
 
 pub struct MessageIterator<'a> {
-    message_reader: &'a mut MessageReader
+    message_reader: &'a mut MessageReader,
 }
 
 impl MessageReader {
@@ -39,7 +39,7 @@ impl MessageReader {
 
     pub fn iter<'a>(&'a mut self) -> MessageIterator<'a> {
         MessageIterator {
-            message_reader: self
+            message_reader: self,
         }
     }
 }
@@ -72,12 +72,18 @@ impl Iterator for MessageIterator<'_> {
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
-pub enum SoundEffect { Powerup, Explosion, Gun, LaserCharge, LaserFire }
+pub enum SoundEffect {
+    Powerup,
+    Explosion,
+    Gun,
+    LaserCharge,
+    LaserFire,
+}
 
 #[derive(Serialize, Deserialize)]
 pub enum ServerMessage {
     AssignId(u64),
-    GameState(crate::gamestate::GameState)
+    GameState(crate::gamestate::GameState),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -99,4 +105,5 @@ impl ClientInput {
 pub enum ClientMessage {
     Input(ClientInput),
     JoinGame { name: String },
+    Shoot,
 }

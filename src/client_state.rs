@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 use ::rand::Rng;
 use color_eyre::Result;
 use egui_macroquad::egui::emath::exponential_smooth_factor;
@@ -74,6 +72,7 @@ impl ClientState {
         clear_background(BLACK);
 
         let player = game_state.players.iter().find(|p| p.id == my_id);
+
         if let Some(p) = player {
             if whoami::hostname() == "ares" || whoami::hostname() == "spirit" {
                 Self::draw_background(self, p.position().x, p.position().y, p.velocity());
@@ -81,17 +80,29 @@ impl ClientState {
                 Self::draw_background2(self, assets, p.position().x, p.position().y);
             }
 
+            let center = Vec2::new(screen_width() as f32 / 2.0, screen_height() as f32 / 2.0);
+
             let self_pos = p.position();
 
             for player in &game_state.players {
                 for component in &player.components {
                     rendering::draw_texture(
                         assets.malcolm,
-                        screen_width() / 2. - self_pos.x + component.pos.x,
-                        screen_height() / 2. - self_pos.y + component.pos.y,
+                        center.x - self_pos.x + component.pos.x,
+                        center.y - self_pos.y + component.pos.y,
                         component.angle,
                     )
                 }
+            }
+
+            for bullet in &game_state.bullets {
+                println!("{} {}", bullet.pos.x, bullet.pos.y);
+                rendering::draw_texture(
+                    assets.bullet,
+                    center.x - bullet.pos.x,
+                    center.y - bullet.pos.y,
+                    bullet.angle,
+                );
             }
         }
 

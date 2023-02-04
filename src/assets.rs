@@ -1,8 +1,6 @@
-use std::path::PathBuf;
-
 use color_eyre::Result;
 use egui_extras::image::RetainedImage;
-use egui_macroquad::egui::{self};
+use egui_macroquad::egui;
 
 use macroquad::texture::*;
 
@@ -29,6 +27,7 @@ pub struct Assets {
     pub malcolm: Texture2D,
     pub stars: Stars,
     pub egui_textures: EguiTextures,
+    pub bullet: Texture2D,
 }
 
 impl Stars {
@@ -56,6 +55,10 @@ impl Assets {
                     load_image_from_path(include_bytes!("../resources/cannon1.png"))?,
                 ),
             },
+            bullet: Texture2D::from_file_with_format(
+                include_bytes!("../resources/malcolm.png"),
+                None,
+            ),
         };
         Ok(assets)
     }

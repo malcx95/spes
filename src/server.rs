@@ -156,6 +156,15 @@ impl Server {
                 component.angle = rot.angle();
             }
         }
+
+        for bullet in &mut self.state.bullets {
+            let rb = self.p.rigid_body_set.get(bullet.handle).unwrap();
+            let pos = rb.position();
+            let trans = pos.translation;
+
+            bullet.pos = vec2(trans.x, trans.y);
+            bullet.angle = pos.rotation.angle();
+        }
     }
 
     fn accept_new_connections(&mut self) {
@@ -254,6 +263,10 @@ impl Server {
 
                         let player = Player::new(client.id, name, components);
                         self.state.add_player(player);
+                    }
+                    Ok(ClientMessage::Shoot) => {
+                        let bullet = self.state.shoot(client.id, &mut self.p.rigid_body_set);
+                        self.state.bullets.push(bullet);
                     }
                     Err(_) => {
                         println!("Could not decode message from {}, deleting", client.id);

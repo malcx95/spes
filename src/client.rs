@@ -97,6 +97,11 @@ impl MainState {
         let input_message = ClientMessage::Input(input);
         send_client_message(&input_message, &mut server_reader.stream);
 
+        if is_key_down(KeyCode::Space) {
+            let msg = ClientMessage::Shoot;
+            send_client_message(&msg, &mut server_reader.stream);
+        }
+
         StateResult::Continue
     }
 
