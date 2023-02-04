@@ -75,13 +75,16 @@ impl ClientState {
 
         let player = game_state.players.iter().find(|p| p.id == my_id);
         if let Some(p) = player {
-            if whoami::hostname() == "ares" || whoami::hostname() == "spirit" {
+            if whoami::hostname() == "ares" {
                 Self::draw_background(self, p.position().x, p.position().y, p.velocity());
             } else {
-                Self::draw_background2(self, assets, p.position().x, p.position().y);
+                Self::draw_background2(self, assets, p.position().x, p.position().y, p.angle());
             }
 
             let self_pos = p.position();
+            let self_angle = p.angle();
+
+            Self::draw_bounds(self_pos.x, self_pos.y);
 
             for player in &game_state.players {
                 for component in &player.components {
@@ -98,11 +101,31 @@ impl ClientState {
         Ok(())
     }
 
+    fn draw_bounds(
+        player_x: f32,
+        player_y: f32,
+    ) {
+        let sx = screen_width() / 2.;
+        let sy = screen_height() / 2.;
+
+        let lines = vec![
+            ((0., 0.), (0., constants::WORLD_SIZE)),
+            ((0., constants::WORLD_SIZE), (constants::WORLD_SIZE, constants::WORLD_SIZE)),
+            ((constants::WORLD_SIZE, constants::WORLD_SIZE), (constants::WORLD_SIZE, 0.)),
+            ((constants::WORLD_SIZE, 0.), (0., 0.)),
+        ];
+
+        for ((x1, y1), (x2, y2)) in lines {
+            draw_line(sx + x1 - player_x, sy + y1 - player_y, sx + x2 - player_x, sy + y2 - player_y, 5., GREEN);
+        }
+    }
+
     fn draw_background2(
         client_state: &mut ClientState,
         assets: &Assets,
         player_x: f32,
         player_y: f32,
+        player_angle: f32,
     ) {
         for star in &client_state.stars {
             let star_texture = assets.stars.stars[star.star_index as usize];

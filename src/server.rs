@@ -109,6 +109,35 @@ impl Server {
         }
     }
 
+    pub fn init_walls(&mut self) {
+        for x in -1..2 {
+            for y in -1..2 {
+
+                if x == 0 && y == 0 {
+                    continue;
+                }
+
+                let dx = x as f32;
+                let dy = y as f32;
+
+                let rb = RigidBodyBuilder::dynamic()
+                    .build();
+
+                let collider = ColliderBuilder::cuboid(constants::WORLD_SIZE / 2., constants::WORLD_SIZE / 2.)
+                    .mass(0.0)
+                    .translation(vector![dx * constants::WORLD_SIZE + constants::WORLD_SIZE / 2., dy * constants::WORLD_SIZE + constants::WORLD_SIZE / 2.])
+                    .build();
+
+                let body_handle = self.p.rigid_body_set.insert(rb);
+                self.p.collider_set.insert_with_parent(
+                    collider,
+                    body_handle,
+                    &mut self.p.rigid_body_set,
+                );
+            }
+        }
+    }
+
     pub fn update(&mut self) {
         let elapsed = self.last_time.elapsed();
         let delta_time = constants::DELTA_TIME;
@@ -228,7 +257,7 @@ impl Server {
                         }
 
                         let p = &mut self.p;
-                        let components = [(0., 0.), (0., 200.)]
+                        let components = [(constants::WORLD_SIZE / 2., constants::WORLD_SIZE / 2.), (200., 200.)]
                             .into_iter()
                             .map(|(x, y)| {
                                 let rb = RigidBodyBuilder::dynamic()
@@ -310,6 +339,7 @@ impl Server {
 
 fn main() {
     let mut server = Server::new();
+    server.init_walls();
     loop {
         server.update();
     }

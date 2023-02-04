@@ -59,7 +59,7 @@ impl Player {
             true,
         );
 
-        rb.apply_torque_impulse(self.input_x * 1_000_000., true)
+        rb.apply_torque_impulse(self.input_x * 100_000., true)
     }
 
     pub fn core(&self) -> &Component {
