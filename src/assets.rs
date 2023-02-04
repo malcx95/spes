@@ -21,11 +21,9 @@ pub struct EguiTextures {
     pub cannon: RetainedImage,
 }
 
-
 pub struct Stars {
-    pub stars: Vec<Texture2D>
+    pub stars: Vec<Texture2D>,
 }
-
 
 pub struct Assets {
     pub malcolm: Texture2D,
@@ -47,7 +45,10 @@ impl Stars {
 impl Assets {
     pub fn new() -> Result<Assets> {
         let assets = Assets {
-            malcolm: Texture2D::from_file_with_format(include_bytes!("../resources/malcolm.png"), None),
+            malcolm: Texture2D::from_file_with_format(
+                include_bytes!("../resources/malcolm.png"),
+                None,
+            ),
             stars: Stars::new(),
             egui_textures: EguiTextures {
                 cannon: RetainedImage::from_color_image(

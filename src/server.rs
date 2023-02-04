@@ -154,7 +154,6 @@ impl Server {
 
                 component.pos = vec2(trans.x, trans.y);
                 component.angle = rot.angle();
-
             }
         }
     }
@@ -248,7 +247,7 @@ impl Server {
                                 Component {
                                     pos: vec2(x, y),
                                     physics_handle: body_handle,
-                                    angle: 0.
+                                    angle: 0.,
                                 }
                             })
                             .collect();
