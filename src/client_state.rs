@@ -26,6 +26,7 @@ impl ClientState {
                     ("window_dimensions".into(), UniformType::Float2),
                     ("player".into(), UniformType::Float2),
                     ("global_scale".into(), UniformType::Float1),
+                    ("global_offset".into(), UniformType::Float1)
                 ],
                 textures: vec![],
             },
