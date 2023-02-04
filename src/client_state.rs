@@ -1,5 +1,6 @@
 use std::f32::consts::PI;
 
+use libplen::messages::ClientMessage;
 use ::rand::Rng;
 use color_eyre::Result;
 use egui_macroquad::egui::emath::exponential_smooth_factor;
@@ -22,6 +23,7 @@ pub struct ClientState {
     my_id: u64,
     stars: Vec<Star>,
     stars_material: Material,
+    is_building: bool,
 }
 
 const STARS_VERT: &str = include_str!("./shaders/stars.vert");
@@ -48,6 +50,7 @@ impl ClientState {
             my_id,
             stars: Self::init_stars(),
             stars_material,
+            is_building: false,
         }
     }
 
@@ -67,8 +70,16 @@ impl ClientState {
         stars
     }
 
-    pub fn update(&mut self, _delta_time: f32, _game_state: &mut GameState, _my_id: u64) {
-        // update client side stuff
+    pub fn update(
+        &mut self,
+        _delta_time: f32,
+        _game_state: &mut GameState,
+        _my_id: u64,
+        client_messages: &mut Vec<ClientMessage>,
+    ) {
+        if is_key_pressed(KeyCode::B) {
+            self.is_building = !self.is_building;
+        }
     }
 
     pub fn draw(&mut self, my_id: u64, game_state: &GameState, assets: &Assets) -> Result<()> {
@@ -89,13 +100,20 @@ impl ClientState {
 
             for player in &game_state.players {
                 for component in &player.components {
-                    rendering::draw_texture(
-                        assets.malcolm,
+                    let (x, y) = (
                         screen_width() / 2. - self_pos.x + component.pos.x,
                         screen_height() / 2. - self_pos.y + component.pos.y,
-                        component.angle,
-                    )
+                    );
+                    rendering::draw_texture(assets.malcolm, x, y, component.angle);
+
+                    draw_circle_lines(x, y, 64., 1., GREEN);
+                    draw_circle_lines(x, y, 32., 1., RED);
                 }
+            }
+
+            if self.is_building {
+                let (x, y) = mouse_position();
+                draw_circle_lines(x, y, 32., 1., BLUE)
             }
         }
 

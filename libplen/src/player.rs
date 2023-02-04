@@ -21,6 +21,8 @@ pub struct Player {
     pub input_y: f32,
 
     pub components: Vec<Component>,
+
+    pub is_building: bool,
 }
 
 impl Player {
@@ -33,6 +35,8 @@ impl Player {
             input_y: 0.,
 
             components,
+
+            is_building: false,
         }
     }
 

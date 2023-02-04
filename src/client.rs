@@ -8,7 +8,7 @@ use std::time::Instant;
 
 use color_eyre::Result;
 use egui::{Align, Layout, Sense};
-use egui_macroquad::egui::{self, Align2, Color32, FontId, Rounding, Stroke};
+use egui_macroquad::egui::{self, Color32, Rounding, Stroke};
 
 use assets::Assets;
 use libplen::constants::WORLD_SIZE;
@@ -72,7 +72,11 @@ impl MainState {
         ClientInput { x_input, y_input }
     }
 
-    fn update(&mut self, server_reader: &mut MessageReader) -> StateResult {
+    fn update(
+        &mut self,
+        server_reader: &mut MessageReader,
+        extra_messages: &mut Vec<ClientMessage>,
+    ) -> StateResult {
         let elapsed = self.last_time.elapsed();
         self.last_time = Instant::now();
         let dt_duration = std::time::Duration::from_millis(1000 / 60);
@@ -91,8 +95,12 @@ impl MainState {
 
         let input = Self::read_input();
 
-        self.client_state
-            .update(elapsed.as_secs_f32(), &mut self.game_state, self.my_id);
+        self.client_state.update(
+            elapsed.as_secs_f32(),
+            &mut self.game_state,
+            self.my_id,
+            extra_messages,
+        );
 
         let input_message = ClientMessage::Input(input);
         send_client_message(&input_message, &mut server_reader.stream);
@@ -146,7 +154,8 @@ async fn main() -> Result<()> {
 
         // let main_state = &mut MainState::new(my_id);
         loop {
-            main_state.update(&mut reader);
+            let mut client_messages = vec![];
+            main_state.update(&mut reader, &mut client_messages);
 
             main_state.draw(&mut assets)?;
 
@@ -166,24 +175,19 @@ async fn main() -> Result<()> {
                                 ui.heading("Modules");
                                 ui.add_space(3.0);
 
-                                egui::ScrollArea::vertical()
-                                    .id_source("modules")
-                                    .show(ui, |ui| {
-                                        ui.with_layout(Layout::left_to_right(Align::LEFT), |ui| {
-                                            ui.image(
-                                                assets.egui_textures.cannon.texture_id(ctx),
-                                                egui::Vec2 { x: 64., y: 64. },
-                                            );
-                                            ui.image(
-                                                assets.egui_textures.cannon.texture_id(ctx),
-                                                egui::Vec2 { x: 64., y: 64. },
-                                            );
-                                            ui.image(
-                                                assets.egui_textures.cannon.texture_id(ctx),
-                                                egui::Vec2 { x: 64., y: 64. },
-                                            );
-                                        })
-                                    });
+                                ui.with_layout(Layout::left_to_right(Align::LEFT), |ui| {
+                                    ui.image(
+                                        assets.egui_textures.cannon.texture_id(ctx),
+                                        egui::Vec2 { x: 64., y: 64. },
+                                    )
+                                    .interact(egui::Sense {
+                                        click: true,
+                                        drag: true,
+                                        focusable: true,
+                                    })
+                                    .clicked()
+                                    .then(|| println!("Clicked"));
+                                });
                             });
                         },
                     )
@@ -230,11 +234,13 @@ async fn main() -> Result<()> {
                 });
             });
 
-            // Draw things before egui
-
             egui_macroquad::draw();
 
             next_frame().await;
+
+            while let Some(msg) = client_messages.pop() {
+                send_client_message(&msg, &mut reader.stream);
+            }
         }
     }
 }
