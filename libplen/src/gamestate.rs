@@ -1,4 +1,4 @@
-use rapier2d::prelude::{vector, RigidBodyBuilder, RigidBodyHandle, RigidBodySet, RigidBodyType};
+use rapier2d::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
@@ -74,9 +74,15 @@ impl GameState {
     pub fn shoot(&mut self, id: u64, rbs: &mut RigidBodySet) -> Bullet {
         let player = self.get_player_by_id(id).unwrap();
         let player_rb = rbs.get(player.core().physics_handle).unwrap();
-        let rb = RigidBodyBuilder::new(RigidBodyType::Fixed)
+        let player_angle = player_rb.rotation().angle();
+        let player_vel = player_rb.linvel();
+        let rb = RigidBodyBuilder::new(RigidBodyType::KinematicVelocityBased)
             .translation(player_rb.translation().clone())
-            .rotation(player_rb.rotation().angle())
+            .rotation(player_angle)
+            .linvel(vector!(
+                player_vel.x + (1000. * (player_angle - std::f32::consts::PI / 2.).cos()),
+                player_vel.y + (1000. * (player_angle - std::f32::consts::PI / 2.).sin())
+            ))
             .build();
 
         let pos = rb.position().translation;
