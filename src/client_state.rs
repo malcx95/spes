@@ -4,12 +4,21 @@ use libplen::gamestate::GameState;
 use libplen::math::{self, vec2, Vec2};
 use macroquad::prelude::*;
 use macroquad::texture;
+use ::rand::Rng;
 
 use crate::assets::Assets;
 
+use crate::rendering;
+
+pub struct Star {
+    x: f32,
+    y: f32,
+    star_index: i32,
+}
+
 pub struct ClientState {
     stars_material: macroquad::material::Material,
-    // add client side state
+    stars: Vec<Star>,
 }
 
 const STARS_VERT: &str = include_str!("./shaders/stars.vert");
@@ -34,7 +43,20 @@ impl ClientState {
 
         ClientState {
             stars_material, // init client stuff
+            stars: Self::init_stars(),
         }
+    }
+
+    fn init_stars() -> Vec<Star> {
+        let mut stars = vec![];
+        let mut rng = ::rand::thread_rng();
+        for i in 0..constants::NUM_STARS {
+            let x = rng.gen_range((-constants::WORLD_SIZE)..(2.*constants::WORLD_SIZE));
+            let y = rng.gen_range((-constants::WORLD_SIZE)..(2.*constants::WORLD_SIZE));
+            let i = rng.gen_range(0..2);
+            stars.push(Star { x, y, star_index: i });
+        }
+        stars
     }
 
     pub fn update(&mut self, delta_time: f32, game_state: &mut GameState, my_id: u64) {
@@ -45,13 +67,13 @@ impl ClientState {
         &mut self,
         my_id: u64,
         game_state: &GameState,
-        assets: &mut Assets,
+        assets: &Assets,
     ) -> Result<(), String> {
         clear_background(BLACK);
 
         let player = game_state.players.iter().find(|p| p.id == my_id);
         if let Some(p) = player {
-            Self::draw_background(self, p.position.x, p.position.y, p.speed);
+            Self::draw_background2(self, assets, p.position.x, p.position.y, p.angle, p.speed);
         }
 
         draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
@@ -60,22 +82,30 @@ impl ClientState {
         draw_text("HELLO", 20.0, 20.0, 20.0, DARKGRAY);
 
         for player in &game_state.players {
-            let params = texture::DrawTextureParams {
-                dest_size: None,
-                source: None,
-                rotation: player.angle,
-                flip_x: false,
-                flip_y: false,
-                pivot: None,
-            };
 
-            let px = player.position.x;
-            let py = player.position.y;
+            let px = screen_width() / 2.;
+            let py = screen_height() / 2.;
 
-            texture::draw_texture_ex(assets.malcolm, px, py, BLUE, params);
+            rendering::draw_texture(assets.malcolm, px, py, 0.);
         }
 
         Ok(())
+    }
+
+    fn draw_background2(
+        client_state: &mut ClientState,
+        assets: &Assets,
+        player_x: f32,
+        player_y: f32,
+        player_angle: f32,
+        player_speed: f32,
+    ) {
+        for star in &client_state.stars {
+            let star_texture = assets.stars.stars[star.star_index as usize];
+            let pivot_x = screen_width() / 2.;
+            let pivot_y = screen_height() / 2.;
+            rendering::draw_texture_pivot_size(star_texture, star.x - player_x, star.y - player_y, -player_angle, pivot_x, pivot_y, 20., 20.);
+        }
     }
 
     fn draw_background(

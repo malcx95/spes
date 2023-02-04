@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 macroquad = "0.3"
 bincode = "1.2.1"
-rand = "0.7.2"
+rand = "0.8.5"
 rand_derive = "0.5.0"
 whoami = "0.6.0"
 libplen = {path="libplen"}

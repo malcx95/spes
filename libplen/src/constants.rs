@@ -7,7 +7,5 @@ pub const SERVER_SLEEP_DURATION: u64 = 10;
 
 pub const WINDOW_SIZE: f32 = 700.;
 
-pub const MENU_BACKGROUND_COLOR: (u8, u8, u8) = (108, 57, 57);
-
-pub const NAME_POS: (f32, f32) = (50., 150.);
+pub const NUM_STARS: i32 = 1000;
 

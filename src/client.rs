@@ -1,5 +1,6 @@
 mod assets;
 mod client_state;
+mod rendering;
 
 use std::io::prelude::*;
 use std::net::TcpStream;

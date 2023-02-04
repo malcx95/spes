@@ -1,9 +1,12 @@
 use serde_derive::{Serialize, Deserialize};
 
-use crate::math::{Vec2, vec2};
+use crate::constants;
+use crate::math::{Vec2, vec2, modulo};
+use std::f32::consts::PI;
 
 
 const PLAYER_ANGLE_SPEED: f32 = 0.01;
+const PLAYER_ANGLE_OFFSET: f32 = PI / 2.;
 const PLAYER_FORWARD_INERTIA: f32 = 5.0;
 
 
@@ -48,6 +51,8 @@ impl Player {
         self.angle += self.input_x * PLAYER_ANGLE_SPEED;
         self.speed += self.input_y * PLAYER_FORWARD_INERTIA;
 
-        self.position += Vec2::from_direction(self.angle, self.speed * delta_time);
+        self.position += Vec2::from_direction(self.angle - PLAYER_ANGLE_OFFSET, self.speed * delta_time);
+        self.position.x = modulo(self.position.x, constants::WORLD_SIZE);
+        self.position.y = modulo(self.position.y, constants::WORLD_SIZE);
     }
 }
