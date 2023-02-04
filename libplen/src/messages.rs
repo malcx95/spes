@@ -97,6 +97,10 @@ pub struct ClientInput {
     pub mouse_y: f32,
 
     pub aim_angle: f32,
+
+    pub mouse_left: bool,
+    pub mouse_right: bool,
+    pub shielding: bool,
 }
 
 impl ClientInput {
@@ -107,6 +111,9 @@ impl ClientInput {
             mouse_x: 0.,
             mouse_y: 0.,
             aim_angle: 0.,
+            mouse_left: false,
+            mouse_right: false,
+            shielding: false,
         }
     }
 }

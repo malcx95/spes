@@ -320,6 +320,7 @@ impl Server {
                         client.input.mouse_x,
                         client.input.mouse_y,
                         client.input.aim_angle,
+                        client.input.shielding,
                     );
                 }
             }
