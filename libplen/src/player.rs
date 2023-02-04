@@ -49,7 +49,7 @@ impl Player {
             .physics_handle;
 
         println!("{}", self.input_y);
-        let rb = 
+        let rb =
         rigid_body_set
             .get_mut(root_handle)
             .expect(&format!("No rigid body for player {}", self.id));
