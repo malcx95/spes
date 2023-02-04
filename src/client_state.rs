@@ -5,6 +5,7 @@ use color_eyre::Result;
 use egui_macroquad::egui::emath::exponential_smooth_factor;
 use libplen::constants;
 use libplen::gamestate::GameState;
+use libplen::player::Player;
 use macroquad::prelude::*;
 
 use crate::assets::Assets;
@@ -73,7 +74,7 @@ impl ClientState {
     pub fn draw(&mut self, my_id: u64, game_state: &GameState, assets: &Assets) -> Result<()> {
         clear_background(BLACK);
 
-        let player = game_state.players.iter().find(|p| p.id == my_id);
+        let player = self.my_player(my_id, game_state);
         if let Some(p) = player {
             if whoami::hostname() == "ares" {
                 Self::draw_background(self, p.position().x, p.position().y, p.velocity());
@@ -82,7 +83,7 @@ impl ClientState {
             }
 
             let self_pos = p.position();
-            let self_angle = p.angle();
+            let _self_angle = p.angle();
 
             Self::draw_bounds(self_pos.x, self_pos.y);
 
@@ -101,22 +102,36 @@ impl ClientState {
         Ok(())
     }
 
-    fn draw_bounds(
-        player_x: f32,
-        player_y: f32,
-    ) {
+    pub fn my_player<'gs>(&self, my_id: u64, game_state: &'gs GameState) -> Option<&'gs Player> {
+        game_state.players.iter().find(|p| p.id == my_id)
+    }
+
+    fn draw_bounds(player_x: f32, player_y: f32) {
         let sx = screen_width() / 2.;
         let sy = screen_height() / 2.;
 
         let lines = vec![
             ((0., 0.), (0., constants::WORLD_SIZE)),
-            ((0., constants::WORLD_SIZE), (constants::WORLD_SIZE, constants::WORLD_SIZE)),
-            ((constants::WORLD_SIZE, constants::WORLD_SIZE), (constants::WORLD_SIZE, 0.)),
+            (
+                (0., constants::WORLD_SIZE),
+                (constants::WORLD_SIZE, constants::WORLD_SIZE),
+            ),
+            (
+                (constants::WORLD_SIZE, constants::WORLD_SIZE),
+                (constants::WORLD_SIZE, 0.),
+            ),
             ((constants::WORLD_SIZE, 0.), (0., 0.)),
         ];
 
         for ((x1, y1), (x2, y2)) in lines {
-            draw_line(sx + x1 - player_x, sy + y1 - player_y, sx + x2 - player_x, sy + y2 - player_y, 5., GREEN);
+            draw_line(
+                sx + x1 - player_x,
+                sy + y1 - player_y,
+                sx + x2 - player_x,
+                sy + y2 - player_y,
+                5.,
+                GREEN,
+            );
         }
     }
 

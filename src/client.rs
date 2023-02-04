@@ -7,11 +7,11 @@ use std::net::TcpStream;
 use std::time::Instant;
 
 use color_eyre::Result;
-use egui_macroquad::egui;
-use egui_macroquad::egui::Align;
-use egui_macroquad::egui::Layout;
+use egui::{Align, Layout, Sense};
+use egui_macroquad::egui::{self, Align2, Color32, FontId, Rounding, Stroke};
 
 use assets::Assets;
+use libplen::constants::WORLD_SIZE;
 use libplen::gamestate;
 use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage};
 
@@ -187,6 +187,29 @@ async fn main() -> Result<()> {
                             });
                         },
                     )
+                });
+                egui::Window::new("minimap").show(ctx, |ui| {
+                    let (response, painter) =
+                        ui.allocate_painter(ui.available_size_before_wrap(), Sense::hover());
+                    let player_pos = main_state
+                        .client_state
+                        .my_player(main_state.my_id, &main_state.game_state)
+                        .unwrap()
+                        .position();
+                    let inner = response.rect.shrink(10.);
+                    let px = inner.min.x + (inner.width() * (player_pos.x / WORLD_SIZE));
+                    let py = inner.min.y + (inner.height() * (player_pos.y / WORLD_SIZE));
+                    painter.rect(
+                        inner,
+                        Rounding::none(),
+                        Color32::BLACK,
+                        Stroke::new(5., Color32::WHITE),
+                    );
+                    painter.rect_filled(
+                        egui::Rect::from_center_size((px, py).into(), (6., 6.).into()),
+                        Rounding::none(),
+                        Color32::RED,
+                    );
                 });
             });
 
