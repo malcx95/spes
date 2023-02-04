@@ -320,9 +320,7 @@ impl Server {
 
             for player in &mut self.state.players {
                 if player.id == client.id {
-                    player.set_input(
-                        &client.input
-                    );
+                    player.set_input(&client.input);
                 }
             }
         }
