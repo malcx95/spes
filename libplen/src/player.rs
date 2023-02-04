@@ -172,11 +172,15 @@ impl Player {
             .get_mut(root_handle)
             .expect(&format!("No rigid body for player {}", self.id));
 
-        rb.apply_impulse_at_point(
-            rb.position().rotation * vector!(0., -self.input_y) * 100_000.,
-            rb.position().translation.vector.into(),
-            true,
-        );
+        rb.reset_forces(true);
+        rb.reset_torques(true);
+        rb.add_force(rb.position().rotation * vector!(0., -self.input_y) * 1000_000., true);
+        rb.add_torque(self.input_x * 100_0000., true);
+        // rb.apply_impulse_at_point(
+        //     rb.position().rotation * vector!(0., -self.input_y) * 100_000.,
+        //     rb.position().translation.vector.into(),
+        //     true,
+        // );
 
         rb.apply_torque_impulse(self.input_x * 100_000., true);
 
