@@ -113,19 +113,19 @@ impl ClientState {
                 Self::draw_background2(self, assets, p.position().x, p.position().y, p.angle());
             }
 
-            let center = Vec2::new(screen_width() as f32 / 2.0, screen_height() as f32 / 2.0);
-
             let self_pos = p.position();
             let _self_angle = p.angle();
+
+            let center = Vec2::new(
+                screen_width() as f32 / 2.0 - self_pos.x,
+                screen_height() as f32 / 2.0 - self_pos.y,
+            );
 
             Self::draw_bounds(self_pos.x, self_pos.y);
 
             for player in &game_state.players {
                 for component in &player.components {
-                    let (x, y) = (
-                        screen_width() / 2. - self_pos.x + component.pos.x,
-                        screen_height() / 2. - self_pos.y + component.pos.y,
-                    );
+                    let (x, y) = (center.x + component.pos.x, center.y + component.pos.y);
                     rendering::draw_texture_centered(assets.malcolm, x, y, component.angle);
 
                     draw_circle_lines(x, y, 64., 1., GREEN);
@@ -134,10 +134,10 @@ impl ClientState {
             }
 
             for bullet in &game_state.bullets {
-                rendering::draw_texture(
+                rendering::draw_texture_centered(
                     assets.bullet,
-                    center.x - bullet.pos.x,
-                    center.y - bullet.pos.y,
+                    center.x + bullet.pos.x,
+                    center.y + bullet.pos.y,
                     bullet.angle,
                 );
             }
