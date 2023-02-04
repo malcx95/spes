@@ -1,10 +1,10 @@
 use ::rand::Rng;
 use color_eyre::Result;
 use egui_macroquad::egui::emath::exponential_smooth_factor;
-use libplen::constants;
 use libplen::gamestate::GameState;
 use libplen::messages::ClientMessage;
 use libplen::player::Player;
+use libplen::{constants, math};
 use macroquad::prelude::*;
 
 use crate::assets::Assets;
@@ -80,6 +80,28 @@ impl ClientState {
         }
     }
 
+    pub fn is_valid_component_pos(
+        &self,
+        my_id: u64,
+        game_state: &GameState,
+        (x, y): (f32, f32),
+    ) -> bool {
+        if let Some(p) = self.my_player(my_id, game_state) {
+            let in_range = p
+                .components
+                .iter()
+                .any(|c| (c.pos - math::vec2(x, y)).norm().abs() < constants::MODULE_RADIUS * 4.);
+            let overlap = p
+                .components
+                .iter()
+                .any(|c| (c.pos - math::vec2(x, y)).norm().abs() < constants::MODULE_RADIUS * 2.);
+
+            in_range && !overlap
+        } else {
+            false
+        }
+    }
+
     pub fn draw(&mut self, my_id: u64, game_state: &GameState, assets: &Assets) -> Result<()> {
         clear_background(BLACK);
 
@@ -121,8 +143,19 @@ impl ClientState {
             }
 
             if self.is_building {
+                println!("Is building");
                 let (x, y) = mouse_position();
-                draw_circle_lines(x, y, 32., 1., BLUE)
+
+                let math::Vec2 {
+                    x: x_world,
+                    y: y_world,
+                } = p.position() + math::vec2(x, y)
+                    - math::vec2(screen_width(), screen_height()) / 2.;
+
+                if self.is_valid_component_pos(my_id, game_state, (x_world, y_world)) {
+                    draw_circle_lines(x, y, constants::MODULE_RADIUS, 1., BLUE);
+                    draw_circle_lines(x, y, constants::MODULE_RADIUS * 2., 1., PURPLE)
+                }
             }
         }
 
