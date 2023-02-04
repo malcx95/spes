@@ -71,11 +71,14 @@ impl MainState {
 
         let (mouse_x, mouse_y) = mouse_position();
 
+        let shoot = is_key_down(KeyCode::Space);
+
         ClientInput {
             x_input,
             y_input,
             mouse_x,
             mouse_y,
+            shoot,
         }
     }
 
@@ -111,11 +114,6 @@ impl MainState {
 
         let input_message = ClientMessage::Input(input);
         send_client_message(&input_message, &mut server_reader.stream);
-
-        if is_key_down(KeyCode::Space) {
-            let msg = ClientMessage::Shoot;
-            send_client_message(&msg, &mut server_reader.stream);
-        }
 
         StateResult::Continue
     }
@@ -240,6 +238,10 @@ async fn main() -> Result<()> {
                     ui.monospace(format!(
                         "player angle: {:1.3}",
                         player.angle() + std::f32::consts::PI
+                    ));
+                    ui.monospace(format!(
+                        "bullets: {:?}",
+                        main_state.game_state.bullets.len()
                     ));
                 });
             });

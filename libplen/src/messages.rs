@@ -93,6 +93,8 @@ pub struct ClientInput {
 
     pub mouse_x: f32,
     pub mouse_y: f32,
+
+    pub shoot: bool,
 }
 
 impl ClientInput {
@@ -102,6 +104,7 @@ impl ClientInput {
             y_input: 0.,
             mouse_x: 0.,
             mouse_y: 0.,
+            shoot: false,
         }
     }
 }
@@ -110,5 +113,4 @@ impl ClientInput {
 pub enum ClientMessage {
     Input(ClientInput),
     JoinGame { name: String },
-    Shoot,
 }

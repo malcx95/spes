@@ -1,6 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 
-use crate::math::Vec2;
+use crate::gamestate::Bullet;
+use crate::math::{Vec2, vec2};
 
 use rapier2d::prelude::*;
 use rapier2d::prelude::{RigidBodyHandle, RigidBodySet};
@@ -25,6 +26,8 @@ pub struct Player {
 
     pub components: Vec<Component>,
 
+    pub shoot: bool,
+
     pub is_building: bool,
 }
 
@@ -42,29 +45,36 @@ impl Player {
 
             components,
 
+            shoot: false,
+
             is_building: false,
         }
     }
 
-    pub fn set_input(&mut self, input_x: f32, input_y: f32, mouse_x: f32, mouse_y: f32) {
+    pub fn set_input(
+        &mut self,
+        input_x: f32,
+        input_y: f32,
+        mouse_x: f32,
+        mouse_y: f32,
+        shoot: bool,
+    ) {
         self.input_x = input_x;
         self.input_y = input_y;
         self.mouse_x = mouse_x;
         self.mouse_y = mouse_y;
+        self.shoot = shoot;
     }
 
-    pub fn shield_update(&mut self) {
+    pub fn shield_update(&mut self) {}
 
-    }
-
-    pub fn update(&mut self, rigid_body_set: &mut RigidBodySet, _delta_time: f32) {
+    pub fn update(&mut self, rigid_body_set: &mut RigidBodySet, _delta_time: f32, bullets: &mut Vec<Bullet>) {
         let root_handle = self
             .components
             .first()
             .expect("Player without a component")
             .physics_handle;
 
-        println!("{}", self.input_y);
         let rb = rigid_body_set
             .get_mut(root_handle)
             .expect(&format!("No rigid body for player {}", self.id));
@@ -75,7 +85,40 @@ impl Player {
             true,
         );
 
-        rb.apply_torque_impulse(self.input_x * 100_000., true)
+        rb.apply_torque_impulse(self.input_x * 100_000., true);
+
+        if self.shoot {
+            self.shoot(rigid_body_set, bullets);
+        }
+
+    }
+
+    pub fn shoot(&mut self, rbs: &mut RigidBodySet, bullets: &mut Vec<Bullet>) {
+        let player_rb = rbs.get(self.core().physics_handle).unwrap();
+        let player_angle = player_rb.rotation().angle();
+        let player_vel = player_rb.linvel();
+        let rb = RigidBodyBuilder::new(RigidBodyType::KinematicVelocityBased)
+            .translation(player_rb.translation().clone())
+            .rotation(player_angle)
+            .linvel(vector!(
+                player_vel.x + (1000. * (player_angle - std::f32::consts::PI / 2.).cos()),
+                player_vel.y + (1000. * (player_angle - std::f32::consts::PI / 2.).sin())
+            ))
+            .build();
+
+        let pos = rb.position().translation;
+        let angle = rb.position().rotation.angle();
+
+        let handle = rbs.insert(rb);
+
+        let bullet = Bullet {
+            handle,
+            lifetime: 0.,
+            pos: vec2(pos.x, pos.y),
+            angle,
+        };
+
+        bullets.push(bullet);
     }
 
     pub fn core(&self) -> &Component {

@@ -40,16 +40,14 @@ impl GameState {
      */
     pub fn update(&mut self, rigid_body_set: &mut RigidBodySet, delta: f32) {
         for player in &mut self.players {
-            player.update(rigid_body_set, delta);
-            println!("{} {}", player.position().x, player.position().y);
-            println!("{}", player.angle());
+            player.update(rigid_body_set, delta, &mut self.bullets);
         }
 
         let mut i: usize = 0;
         while i < self.bullets.len() {
             let bullet = &mut self.bullets[i];
 
-            if bullet.lifetime > 10. {
+            if bullet.lifetime > 3. {
                 self.bullets.remove(i);
             } else {
                 bullet.lifetime += delta;
@@ -71,31 +69,4 @@ impl GameState {
         None
     }
 
-    pub fn shoot(&mut self, id: u64, rbs: &mut RigidBodySet) -> Bullet {
-        let player = self.get_player_by_id(id).unwrap();
-        let player_rb = rbs.get(player.core().physics_handle).unwrap();
-        let player_angle = player_rb.rotation().angle();
-        let player_vel = player_rb.linvel();
-        let rb = RigidBodyBuilder::new(RigidBodyType::KinematicVelocityBased)
-            .translation(player_rb.translation().clone())
-            .rotation(player_angle)
-            .linvel(vector!(
-                player_vel.x + (1000. * (player_angle - std::f32::consts::PI / 2.).cos()),
-                player_vel.y + (1000. * (player_angle - std::f32::consts::PI / 2.).sin())
-            ))
-            .build();
-
-        let pos = rb.position().translation;
-        let pos = vec2(pos.x, pos.y);
-        let angle = rb.position().rotation.angle();
-
-        let handle = rbs.insert(rb);
-
-        Bullet {
-            handle,
-            lifetime: 0.,
-            pos,
-            angle,
-        }
-    }
 }

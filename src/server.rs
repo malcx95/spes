@@ -313,10 +313,6 @@ impl Server {
                         let player = Player::new(client.id, name, components);
                         self.state.add_player(player);
                     }
-                    Ok(ClientMessage::Shoot) => {
-                        let bullet = self.state.shoot(client.id, &mut self.p.rigid_body_set);
-                        self.state.bullets.push(bullet);
-                    }
                     Err(_) => {
                         println!("Could not decode message from {}, deleting", client.id);
                         clients_to_delete.push(client.id);
@@ -337,6 +333,7 @@ impl Server {
                         client.input.y_input,
                         client.input.mouse_x,
                         client.input.mouse_y,
+                        client.input.shoot,
                     );
                 }
             }
