@@ -1,3 +1,4 @@
+use egui_macroquad::egui::emath::exponential_smooth_factor;
 use libplen::constants;
 use libplen::gamestate::GameState;
 use libplen::math::{self, vec2, Vec2};
@@ -24,6 +25,7 @@ impl ClientState {
                 uniforms: vec![
                     ("window_dimensions".into(), UniformType::Float2),
                     ("player".into(), UniformType::Float2),
+                    ("global_scale".into(), UniformType::Float1),
                 ],
                 textures: vec![],
             },
@@ -45,9 +47,11 @@ impl ClientState {
         game_state: &GameState,
         assets: &mut Assets,
     ) -> Result<(), String> {
-        let player = game_state.players.iter().find(|p|p.id == my_id);
+        clear_background(BLACK);
+
+        let player = game_state.players.iter().find(|p| p.id == my_id);
         if let Some(p) = player {
-        Self::draw_background(self, p.position.x, p.position.y);
+            Self::draw_background(self, p.position.x, p.position.y, p.speed);
         }
 
         draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
@@ -74,12 +78,19 @@ impl ClientState {
         Ok(())
     }
 
-    fn draw_background(client_state: &mut ClientState, player_x: f32, player_y: f32) {
-        clear_background(BLACK);
-
+    fn draw_background(
+        client_state: &mut ClientState,
+        player_x: f32,
+        player_y: f32,
+        player_vel: f32,
+    ) {
         let mat = &client_state.stars_material;
         mat.set_uniform("window_dimensions", (screen_width(), screen_height()));
         mat.set_uniform("player", (player_x / 100.0, -player_y / 100.0));
+        mat.set_uniform(
+            "global_scale",
+            1.0 - (exponential_smooth_factor(0.5, 2000.0, player_vel)),
+        );
         gl_use_material(*mat);
         draw_cube((0., 0.0, 0.0).into(), (2.0, 2.0, 0.0).into(), None, WHITE);
         gl_use_default_material();

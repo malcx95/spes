@@ -8,6 +8,7 @@ layout (location = 0) out vec4 color;
 
 uniform vec2 window_dimensions;
 uniform vec2 player;
+uniform float global_scale;
 
 float hash(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
@@ -66,7 +67,7 @@ void main() {
         vec2 gr = fract(uvp / CHUNK) - 0.5;
 
         float scale = mix(0.5, 1, i);
-        col += star_layer(gr, id) * scale;
+        col += star_layer(gr, id) * scale * global_scale;
     }
 
     color = vec4(col, 1.0);
