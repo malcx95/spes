@@ -58,11 +58,10 @@ impl ClientState {
         draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
         draw_text("HELLO", 20.0, 20.0, 20.0, DARKGRAY);
 
-        for _player in &game_state.players {
-            let px = screen_width() / 2.;
-            let py = screen_height() / 2.;
-
-            rendering::draw_texture(assets.malcolm, px, py, 0.);
+        for player in &game_state.players {
+            for component in &player.components {
+                rendering::draw_texture(assets.malcolm, component.pos.x, component.pos.y, 0.);
+            }
         }
 
         Ok(())
