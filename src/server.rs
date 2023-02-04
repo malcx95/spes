@@ -349,7 +349,11 @@ impl Server {
             .translation(vector![world_x, world_y])
             .build();
 
-        let collider = ColliderBuilder::ball(32.).restitution(1.0).build();
+        let mut collider_builder = ColliderBuilder::ball(32.).restitution(0.2).friction(0.);
+        if !components.is_empty() {
+            collider_builder = collider_builder.density(0.000001);
+        }
+        let collider = collider_builder.build();
 
         let body_handle = p.rigid_body_set.insert(rb);
         p.collider_set
@@ -372,7 +376,7 @@ impl Server {
                     components[0].pos.y - world_y
                 ]);
 
-            p.impulse_joint_set.insert(
+            p.multibody_joint_set.insert(
                 components[0].physics_handle,
                 components[components.len() - 1].physics_handle,
                 joint,
