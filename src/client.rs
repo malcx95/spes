@@ -52,7 +52,7 @@ impl MainState {
         }
     }
 
-    fn read_input() -> ClientInput {
+    fn read_input(&self) -> ClientInput {
         let mut x_input = 0.0;
         let mut y_input = 0.0;
 
@@ -69,6 +69,9 @@ impl MainState {
             x_input += 1.0;
         }
 
+        let mouse_left = is_mouse_button_down(MouseButton::Left);
+        let mouse_right = is_mouse_button_down(MouseButton::Right);
+
         let (mouse_x, mouse_y) = mouse_position();
 
         let shoot = is_key_down(KeyCode::Space);
@@ -78,6 +81,8 @@ impl MainState {
         );
         let aim_angle = nmy.atan2(nmx);
 
+        let shielding = mouse_right && !self.client_state.is_building;
+
         ClientInput {
             x_input,
             y_input,
@@ -85,6 +90,9 @@ impl MainState {
             mouse_y,
             shoot,
             aim_angle,
+            mouse_left,
+            mouse_right,
+            shielding,
         }
     }
 
@@ -109,7 +117,7 @@ impl MainState {
             }
         }
 
-        let input = Self::read_input();
+        let input = self.read_input();
 
         self.client_state.update(
             elapsed.as_secs_f32(),

@@ -36,6 +36,7 @@ pub struct Player {
     pub is_building: bool,
 
     pub shield: Shield,
+    pub shielding: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -118,6 +119,8 @@ impl Player {
             shield,
 
             is_building: false,
+
+            shielding: false,
         }
     }
 
@@ -127,14 +130,17 @@ impl Player {
         input_y: f32,
         mouse_x: f32,
         mouse_y: f32,
-        aim_angle: f32,
         shoot: bool,
+        aim_angle: f32,
+        shielding: bool,
     ) {
         self.input_x = input_x;
         self.input_y = input_y;
         self.mouse_x = mouse_x;
         self.mouse_y = mouse_y;
         self.shoot = shoot;
+        self.aim_angle = aim_angle;
+        self.shielding = shielding;
     }
 
     pub fn shield_update(&mut self) {

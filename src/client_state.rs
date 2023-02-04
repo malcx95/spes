@@ -21,7 +21,7 @@ pub struct ClientState {
     my_id: u64,
     stars: Vec<Star>,
     stars_material: Material,
-    is_building: bool,
+    pub is_building: bool,
 }
 
 const STARS_VERT: &str = include_str!("./shaders/stars.vert");
@@ -184,7 +184,15 @@ impl ClientState {
                 screen_height() / 2. - self_y + pos.y + v.y,
             );
 
-            draw_circle(x, y, 10., GOLD);
+            let alpha = if player.shielding { 1. } else { 0.1 };
+            let color = Color {
+                r: 1.,
+                g: 1.,
+                b: 0.,
+                a: alpha,
+            };
+
+            draw_circle(x, y, 10., color);
             println!("Draw {} {}", x, y);
         }
     }

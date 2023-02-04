@@ -315,8 +315,9 @@ impl Server {
                         client.input.y_input,
                         client.input.mouse_x,
                         client.input.mouse_y,
-                        client.input.aim_angle,
                         client.input.shoot,
+                        client.input.aim_angle,
+                        client.input.shielding,
                     );
                 }
             }
