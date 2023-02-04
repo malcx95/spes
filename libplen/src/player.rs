@@ -1,4 +1,4 @@
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 
 use crate::math::Vec2;
 
@@ -49,27 +49,32 @@ impl Player {
             .physics_handle;
 
         println!("{}", self.input_y);
-        let rb = 
-        rigid_body_set
+        let rb = rigid_body_set
             .get_mut(root_handle)
             .expect(&format!("No rigid body for player {}", self.id));
 
-        rb
-            .apply_impulse_at_point(
-                rb.position().rotation * vector!(self.input_y, 0.)*100_000.,
-                rb.position().translation.vector.into(),
-                true
-            );
+        rb.apply_impulse_at_point(
+            rb.position().rotation * vector!(self.input_y, 0.) * 100_000.,
+            rb.position().translation.vector.into(),
+            true,
+        );
 
         rb.apply_torque_impulse(self.input_x * 100_000., true)
+    }
 
+    pub fn core(&self) -> &Component {
+        self.components.first().expect("Player had no components")
     }
 
     pub fn position(&self) -> Vec2 {
-        self.components.first().expect("Player had no components").pos
+        self.core().pos
     }
 
     pub fn angle(&self) -> f32 {
-        self.components.first().expect("Player had no components").angle
+        self.core().angle
+    }
+
+    pub fn velocity(&self) -> f32 {
+        0.0
     }
 }

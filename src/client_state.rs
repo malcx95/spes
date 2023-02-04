@@ -1,5 +1,8 @@
+use std::f32::consts::PI;
+
 use ::rand::Rng;
 use color_eyre::Result;
+use egui_macroquad::egui::emath::exponential_smooth_factor;
 use libplen::constants;
 use libplen::gamestate::GameState;
 use macroquad::prelude::*;
@@ -16,12 +19,32 @@ pub struct Star {
 
 pub struct ClientState {
     stars: Vec<Star>,
+    stars_material: Material,
 }
+
+const STARS_VERT: &str = include_str!("./shaders/stars.vert");
+const STARS_FRAG: &str = include_str!("./shaders/stars.frag");
 
 impl ClientState {
     pub fn new() -> ClientState {
+        let stars_material = macroquad::material::load_material(
+            STARS_VERT,
+            STARS_FRAG,
+            macroquad::material::MaterialParams {
+                pipeline_params: Default::default(),
+                uniforms: vec![
+                    ("window_dimensions".into(), UniformType::Float2),
+                    ("player".into(), UniformType::Float2),
+                    ("global_scale".into(), UniformType::Float1),
+                ],
+                textures: vec![],
+            },
+        )
+        .unwrap();
+
         ClientState {
             stars: Self::init_stars(),
+            stars_material,
         }
     }
 
@@ -50,7 +73,11 @@ impl ClientState {
 
         let player = game_state.players.iter().find(|p| p.id == my_id);
         if let Some(p) = player {
-            Self::draw_background2(self, assets, p.position().x, p.position().y, p.angle());
+            if whoami::hostname() == "ares" {
+                Self::draw_background(self, p.position().x, p.position().y, p.velocity());
+            } else {
+                Self::draw_background2(self, assets, p.position().x, p.position().y, p.angle());
+            }
         }
 
         draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
@@ -92,7 +119,6 @@ impl ClientState {
         }
     }
 
-    /*
     fn draw_background(
         client_state: &mut ClientState,
         player_x: f32,
@@ -110,5 +136,4 @@ impl ClientState {
         draw_cube((0., 0.0, 0.0).into(), (2.0, 2.0, 0.0).into(), None, WHITE);
         gl_use_default_material();
     }
-    */
 }

@@ -3,6 +3,7 @@ in pkgs.mkShell {
   buildInputs = with pkgs; [
     rustc
     cargo
+    cargo-watch
 
     libGL
     xorg.libX11

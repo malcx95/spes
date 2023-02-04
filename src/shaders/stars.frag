@@ -1,8 +1,8 @@
 #version 450
 
-#define CHUNK 160
-#define LAYERS 3
-#define PIXELATE 3
+#define CHUNK 40
+#define LAYERS 2
+#define PIXELATE 1
 
 layout (location = 0) out vec4 color;
 
@@ -46,7 +46,7 @@ vec3 star_layer(vec2 gr, vec2 id) {
 
             float size = fract(h1 * 3123.43);
             vec3 star_color = star(gr - offset - vec2(h1 - 0.5, h2 - 0.5));
-            //star_color *= smoothstep(0.95, 1.0, size);
+            star_color *= smoothstep(0.95, 1.0, size);
             color += star_color;
         }
     }
@@ -59,7 +59,7 @@ void main() {
 
     vec3 col = vec3(0);
 
-    for (float i = (1.0 / LAYERS); i < 1; i += 1.0 / (LAYERS - 1)) {
+    for (float i = 1.0 / (LAYERS + 1); i < 1; i += 1.0 / (LAYERS + 1)) {
         vec2 uvp = uv + (player * (100 * i)) + (vec2(77, 31) * (3 + i * 70));
 
         uvp = PIXELATE * floor(uvp / PIXELATE);
