@@ -5,6 +5,7 @@ use libplen::math::{self, vec2, Vec2};
 use macroquad::prelude::*;
 use macroquad::texture;
 use ::rand::Rng;
+use color_eyre::Result;
 
 use crate::assets::Assets;
 
@@ -68,7 +69,7 @@ impl ClientState {
         my_id: u64,
         game_state: &GameState,
         assets: &Assets,
-    ) -> Result<(), String> {
+    ) -> Result<()> {
         clear_background(BLACK);
 
         let player = game_state.players.iter().find(|p| p.id == my_id);

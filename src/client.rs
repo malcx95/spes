@@ -6,13 +6,13 @@ use std::io::prelude::*;
 use std::net::TcpStream;
 use std::time::Instant;
 
-use assets::Assets;
+use color_eyre::Result;
 use egui_macroquad::egui;
 use egui_macroquad::egui::Align;
 use egui_macroquad::egui::Layout;
-use libplen::constants;
+
+use assets::Assets;
 use libplen::gamestate;
-use libplen::math::{vec2, Vec2};
 use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage, SoundEffect};
 
 use macroquad::prelude::*;
@@ -68,7 +68,7 @@ impl MainState {
             x_input += 1.0;
         }
 
-        ClientInput{ x_input, y_input }
+        ClientInput { x_input, y_input }
     }
 
     fn update(&mut self, server_reader: &mut MessageReader) -> StateResult {
@@ -99,7 +99,7 @@ impl MainState {
         StateResult::Continue
     }
 
-    fn draw(&mut self, assets: &mut Assets) -> Result<(), String> {
+    fn draw(&mut self, assets: &mut Assets) -> Result<()> {
         self.client_state
             .draw(self.my_id, &self.game_state, assets)?;
 
@@ -108,7 +108,9 @@ impl MainState {
 }
 
 #[macroquad::main("BasicShapes")]
-async fn main() -> Result<(), String> {
+async fn main() -> Result<()> {
+    color_eyre::install()?;
+
     let host = std::env::var("SERVER").unwrap_or(String::from("localhost:4444"));
     let stream = TcpStream::connect(host).expect("Could not connect to server");
     println!("Connected to server");
@@ -124,7 +126,8 @@ async fn main() -> Result<(), String> {
             break bincode::deserialize(&msg).unwrap();
         }
     };
-    let mut assets = assets::Assets::new();
+
+    let mut assets = assets::Assets::new()?;
 
     let my_id = if let ServerMessage::AssignId(id) = msg {
         println!("Received the id {}", id);
@@ -138,17 +141,10 @@ async fn main() -> Result<(), String> {
     let name = whoami::username();
 
     loop {
-
-        send_client_message(
-            &ClientMessage::JoinGame {
-                name
-            },
-            &mut reader.stream,
-        );
+        send_client_message(&ClientMessage::JoinGame { name }, &mut reader.stream);
 
         // let main_state = &mut MainState::new(my_id);
         loop {
-
             main_state.update(&mut reader);
 
             main_state.draw(&mut assets)?;
@@ -156,42 +152,45 @@ async fn main() -> Result<(), String> {
             // Process keys, mouse etc.
 
             egui_macroquad::ui(|ctx| {
-                egui::TopBottomPanel::bottom("signal select left panel")
-                    .show(ctx, |ui| {
-                        ui.with_layout(
-                            Layout::top_down(Align::LEFT).with_cross_justify(true),
-                            |ui| {
-                                let total_space = ui.available_height();
+                egui::TopBottomPanel::bottom("signal select left panel").show(ctx, |ui| {
+                    ui.with_layout(
+                        Layout::top_down(Align::LEFT).with_cross_justify(true),
+                        |ui| {
+                            let total_space = ui.available_height();
 
-                                egui::Frame::none().show(ui, |ui| {
-                                    ui.set_max_height(total_space / 2.);
-                                    ui.set_min_height(total_space / 2.);
+                            egui::Frame::none().show(ui, |ui| {
+                                ui.set_max_height(total_space / 2.);
+                                ui.set_min_height(total_space / 2.);
 
-                                    ui.heading("Modules");
-                                    ui.add_space(3.0);
+                                ui.heading("Modules");
+                                ui.add_space(3.0);
 
-                                    egui::ScrollArea::both()
-                                        .id_source("modules")
-                                        .show(ui, |ui| {
-                                            ui.monospace("Yoloswag")
-                                        });
-                                });
+                                egui::ScrollArea::both()
+                                    .id_source("modules")
+                                    .show(ui, |ui| {
+                                        ui.image(
+                                            assets.egui_textures.cannon.texture_id(ctx),
+                                            egui::Vec2{x: 64., y: 64.},
+                                        );
+                                        ui.monospace("Yoloswag")
+                                    });
+                            });
 
-                                // egui::Frame::none().show(ui, |ui| {
-                                //     ui.heading("Signals");
-                                //     ui.add_space(3.0);
+                            // egui::Frame::none().show(ui, |ui| {
+                            //     ui.heading("Signals");
+                            //     ui.add_space(3.0);
 
-                                //     egui::ScrollArea::both()
-                                //         .id_source("signals")
-                                //         .show(ui, |ui| {
-                                //             if let Some(vcd) = &self.vcd {
-                                //                 self.draw_signal_list(&mut msgs, vcd, ui);
-                                //             }
-                                //         });
-                                // });
-                            },
-                        )
-                    });
+                            //     egui::ScrollArea::both()
+                            //         .id_source("signals")
+                            //         .show(ui, |ui| {
+                            //             if let Some(vcd) = &self.vcd {
+                            //                 self.draw_signal_list(&mut msgs, vcd, ui);
+                            //             }
+                            //         });
+                            // });
+                        },
+                    )
+                });
             });
 
             // Draw things before egui
