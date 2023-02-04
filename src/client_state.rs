@@ -58,7 +58,7 @@ impl ClientState {
         for _ in 0..constants::NUM_STARS {
             let x = rng.gen_range((-constants::WORLD_SIZE)..(2. * constants::WORLD_SIZE));
             let y = rng.gen_range((-constants::WORLD_SIZE)..(2. * constants::WORLD_SIZE));
-            let i = rng.gen_range(0..2);
+            let i = rng.gen_range(0..4);
             stars.push(Star {
                 x,
                 y,
@@ -254,8 +254,8 @@ impl ClientState {
                 0., // -player_angle,
                 pivot_x,
                 pivot_y,
-                20.,
-                20.,
+                40.,
+                40.,
             );
         }
     }

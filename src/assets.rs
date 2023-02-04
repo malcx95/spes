@@ -36,6 +36,7 @@ impl Stars {
             Texture2D::from_file_with_format(include_bytes!("../resources/star1.png"), None),
             Texture2D::from_file_with_format(include_bytes!("../resources/star2.png"), None),
             Texture2D::from_file_with_format(include_bytes!("../resources/star3.png"), None),
+            Texture2D::from_file_with_format(include_bytes!("../resources/star4.png"), None),
         ];
         Stars { stars }
     }

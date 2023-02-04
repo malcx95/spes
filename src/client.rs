@@ -92,7 +92,7 @@ impl MainState {
             mouse_left,
             mouse_right,
             shielding,
-            aim_angle
+            aim_angle,
         }
     }
 

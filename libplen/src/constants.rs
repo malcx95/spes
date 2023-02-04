@@ -5,7 +5,7 @@ pub const SERVER_SLEEP_DURATION: u64 = 10;
 
 pub const WINDOW_SIZE: f32 = 700.;
 
-pub const NUM_STARS: i32 = 1000;
+pub const NUM_STARS: i32 = 3000;
 
 pub const MODULE_RADIUS: f32 = 32.;
 
