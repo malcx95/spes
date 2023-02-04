@@ -72,6 +72,11 @@ impl MainState {
         let (mouse_x, mouse_y) = mouse_position();
 
         let shoot = is_key_down(KeyCode::Space);
+        let (nmx, nmy) = (
+            mouse_x - screen_width() / 2.,
+            mouse_y - screen_height() / 2.,
+        );
+        let aim_angle = nmy.atan2(nmx);
 
         ClientInput {
             x_input,
@@ -79,6 +84,7 @@ impl MainState {
             mouse_x,
             mouse_y,
             shoot,
+            aim_angle,
         }
     }
 
@@ -238,10 +244,6 @@ async fn main() -> Result<()> {
                     ui.monospace(format!(
                         "player angle: {:1.3}",
                         player.angle() + std::f32::consts::PI
-                    ));
-                    ui.monospace(format!(
-                        "bullets: {:?}",
-                        main_state.game_state.bullets.len()
                     ));
                 });
             });

@@ -252,6 +252,7 @@ impl Server {
             };
         }
 
+        let p = &mut self.p;
         for client in self.connections.iter_mut() {
             remove_player_on_disconnect!(client.message_reader.fetch_bytes(), client.id);
 
@@ -267,51 +268,32 @@ impl Server {
                             name = "Mr Whitespace".into();
                         }
 
-                        let p = &mut self.p;
-                        let components = [
+                        let mut components = vec![];
+                        Self::add_component(
+                            p,
                             (constants::WORLD_SIZE / 2., constants::WORLD_SIZE / 2.),
-                            (200., 200.),
-                        ]
-                        .into_iter()
-                        .map(|(x, y)| {
-                            let rb = RigidBodyBuilder::dynamic()
-                                .translation(vector![x, y])
-                                .build();
-
-                            let collider = ColliderBuilder::ball(32.).restitution(1.0).build();
-
-                            let body_handle = p.rigid_body_set.insert(rb);
-                            p.collider_set.insert_with_parent(
-                                collider,
-                                body_handle,
-                                &mut p.rigid_body_set,
-                            );
-
-                            Component {
-                                pos: vec2(x, y),
-                                physics_handle: body_handle,
-                                angle: 0.,
-                            }
-                        })
-                        .collect::<Vec<_>>();
-
-                        let connections = vec![(0, 1)];
-
-                        for (l, r) in connections {
-                            let joint = FixedJointBuilder::new()
-                                .local_anchor1(point![0.0, 0.0])
-                                .local_anchor2(point![0.0, 64.0]);
-
-                            p.impulse_joint_set.insert(
-                                components[l].physics_handle,
-                                components[r].physics_handle,
-                                joint,
-                                true,
-                            );
-                        }
+                            &mut components,
+                        );
+                        Self::add_component(
+                            p,
+                            (
+                                constants::WORLD_SIZE / 2.,
+                                constants::WORLD_SIZE / 2. + constants::MODULE_RADIUS * 2.,
+                            ),
+                            &mut components,
+                        );
 
                         let player = Player::new(client.id, name, components);
                         self.state.add_player(player);
+                    }
+                    Ok(ClientMessage::AddComponent { world_pos }) => {
+                        for player in self.state.players.iter_mut().filter(|p| p.id == client.id) {
+                            Self::add_component(
+                                p,
+                                (world_pos.x, world_pos.y),
+                                &mut player.components,
+                            )
+                        }
                     }
                     Err(_) => {
                         println!("Could not decode message from {}, deleting", client.id);
@@ -333,6 +315,7 @@ impl Server {
                         client.input.y_input,
                         client.input.mouse_x,
                         client.input.mouse_y,
+                        client.input.aim_angle,
                         client.input.shoot,
                     );
                 }
@@ -354,6 +337,47 @@ impl Server {
             .retain(|player| !clients_to_delete.contains(&player.id));
         self.connections
             .retain(|client| !clients_to_delete.contains(&client.id));
+    }
+
+    fn add_component(
+        p: &mut PhysicsState,
+        (world_x, world_y): (f32, f32),
+        components: &mut Vec<Component>,
+    ) {
+        let rb = RigidBodyBuilder::dynamic()
+            .translation(vector![world_x, world_y])
+            .build();
+
+        let collider = ColliderBuilder::ball(32.).restitution(1.0).build();
+
+        let body_handle = p.rigid_body_set.insert(rb);
+        p.collider_set
+            .insert_with_parent(collider, body_handle, &mut p.rigid_body_set);
+
+        let new = Component {
+            pos: vec2(world_x, world_y),
+            physics_handle: body_handle,
+            angle: 0.,
+        };
+
+        components.push(new);
+
+        // Joint if we are adding a sub-component
+        if components.len() != 1 {
+            let joint = FixedJointBuilder::new()
+                .local_anchor1(point![0.0, 0.0])
+                .local_anchor2(point![
+                    components[0].pos.x - world_x,
+                    components[0].pos.y - world_y
+                ]);
+
+            p.impulse_joint_set.insert(
+                components[0].physics_handle,
+                components[components.len() - 1].physics_handle,
+                joint,
+                true,
+            );
+        }
     }
 }
 

@@ -71,12 +71,27 @@ impl ClientState {
     pub fn update(
         &mut self,
         _delta_time: f32,
-        _game_state: &mut GameState,
-        _my_id: u64,
+        game_state: &mut GameState,
+        my_id: u64,
         client_messages: &mut Vec<ClientMessage>,
     ) {
-        if is_key_pressed(KeyCode::B) {
-            self.is_building = !self.is_building;
+        let player = self.my_player(my_id, game_state);
+        if let Some(p) = player {
+            if is_key_pressed(KeyCode::B) {
+                self.is_building = !self.is_building;
+            }
+
+            let mouse_world_pos = Self::mouse_world_pos(p);
+            if self.is_building
+                && self.is_valid_component_pos(my_id, game_state, mouse_world_pos)
+                && is_mouse_button_pressed(MouseButton::Left)
+            {
+                println!("Building component");
+
+                client_messages.push(ClientMessage::AddComponent {
+                    world_pos: mouse_world_pos,
+                });
+            }
         }
     }
 
@@ -84,7 +99,7 @@ impl ClientState {
         &self,
         my_id: u64,
         game_state: &GameState,
-        (x, y): (f32, f32),
+        math::Vec2 { x, y }: math::Vec2,
     ) -> bool {
         if let Some(p) = self.my_player(my_id, game_state) {
             let in_range = p
@@ -107,7 +122,7 @@ impl ClientState {
 
         let player = self.my_player(my_id, game_state);
         if let Some(p) = player {
-            if whoami::hostname() == "ares" {
+            if whoami::hostname() == "ares" || whoami::hostname() == "spirit" {
                 Self::draw_background(self, p.position().x, p.position().y, p.velocity());
             } else {
                 Self::draw_background2(self, assets, p.position().x, p.position().y, p.angle());
@@ -124,6 +139,8 @@ impl ClientState {
             Self::draw_bounds(self_pos.x, self_pos.y);
 
             for player in &game_state.players {
+                Self::draw_shield(player, self_pos.x, self_pos.y);
+
                 for component in &player.components {
                     let (x, y) = (center.x + component.pos.x, center.y + component.pos.y);
                     rendering::draw_texture_centered(assets.malcolm, x, y, component.angle);
@@ -143,23 +160,39 @@ impl ClientState {
             }
 
             if self.is_building {
-                println!("Is building");
                 let (x, y) = mouse_position();
 
-                let math::Vec2 {
-                    x: x_world,
-                    y: y_world,
-                } = p.position() + math::vec2(x, y)
-                    - math::vec2(screen_width(), screen_height()) / 2.;
-
-                if self.is_valid_component_pos(my_id, game_state, (x_world, y_world)) {
+                if self.is_valid_component_pos(my_id, game_state, Self::mouse_world_pos(p)) {
                     draw_circle_lines(x, y, constants::MODULE_RADIUS, 1., BLUE);
                     draw_circle_lines(x, y, constants::MODULE_RADIUS * 2., 1., PURPLE)
+                } else {
+                    draw_circle_lines(x, y, constants::MODULE_RADIUS, 1., ORANGE);
+                    draw_circle_lines(x, y, constants::MODULE_RADIUS * 2., 1., ORANGE)
                 }
             }
         }
 
         Ok(())
+    }
+
+    fn draw_shield(player: &Player, self_x: f32, self_y: f32) {
+        let pos = player.position();
+
+        for v in &player.shield.points {
+            let (x, y) = (
+                screen_width() / 2. - self_x + pos.x + v.x,
+                screen_height() / 2. - self_y + pos.y + v.y,
+            );
+
+            draw_circle(x, y, 10., GOLD);
+            println!("Draw {} {}", x, y);
+        }
+    }
+
+    pub fn mouse_world_pos(p: &Player) -> math::Vec2 {
+        let (x, y) = mouse_position();
+
+        p.position() + math::vec2(x, y) - math::vec2(screen_width(), screen_height()) / 2.
     }
 
     pub fn my_player<'gs>(&self, my_id: u64, game_state: &'gs GameState) -> Option<&'gs Player> {
