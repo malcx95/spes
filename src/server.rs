@@ -112,7 +112,6 @@ impl Server {
     pub fn init_walls(&mut self) {
         for x in -1..2 {
             for y in -1..2 {
-
                 if x == 0 && y == 0 {
                     continue;
                 }
@@ -120,13 +119,16 @@ impl Server {
                 let dx = x as f32;
                 let dy = y as f32;
 
-                let rb = RigidBodyBuilder::dynamic()
-                    .build();
+                let rb = RigidBodyBuilder::dynamic().build();
 
-                let collider = ColliderBuilder::cuboid(constants::WORLD_SIZE / 2., constants::WORLD_SIZE / 2.)
-                    .mass(0.0)
-                    .translation(vector![dx * constants::WORLD_SIZE + constants::WORLD_SIZE / 2., dy * constants::WORLD_SIZE + constants::WORLD_SIZE / 2.])
-                    .build();
+                let collider =
+                    ColliderBuilder::cuboid(constants::WORLD_SIZE / 2., constants::WORLD_SIZE / 2.)
+                        .mass(0.0)
+                        .translation(vector![
+                            dx * constants::WORLD_SIZE + constants::WORLD_SIZE / 2.,
+                            dy * constants::WORLD_SIZE + constants::WORLD_SIZE / 2.
+                        ])
+                        .build();
 
                 let body_handle = self.p.rigid_body_set.insert(rb);
                 self.p.collider_set.insert_with_parent(
@@ -257,29 +259,32 @@ impl Server {
                         }
 
                         let p = &mut self.p;
-                        let components = [(constants::WORLD_SIZE / 2., constants::WORLD_SIZE / 2.), (200., 200.)]
-                            .into_iter()
-                            .map(|(x, y)| {
-                                let rb = RigidBodyBuilder::dynamic()
-                                    .translation(vector![x, y])
-                                    .build();
+                        let components = [
+                            (constants::WORLD_SIZE / 2., constants::WORLD_SIZE / 2.),
+                            (200., 200.),
+                        ]
+                        .into_iter()
+                        .map(|(x, y)| {
+                            let rb = RigidBodyBuilder::dynamic()
+                                .translation(vector![x, y])
+                                .build();
 
-                                let collider = ColliderBuilder::ball(32.).restitution(1.0).build();
+                            let collider = ColliderBuilder::ball(32.).restitution(1.0).build();
 
-                                let body_handle = p.rigid_body_set.insert(rb);
-                                p.collider_set.insert_with_parent(
-                                    collider,
-                                    body_handle,
-                                    &mut p.rigid_body_set,
-                                );
+                            let body_handle = p.rigid_body_set.insert(rb);
+                            p.collider_set.insert_with_parent(
+                                collider,
+                                body_handle,
+                                &mut p.rigid_body_set,
+                            );
 
-                                Component {
-                                    pos: vec2(x, y),
-                                    physics_handle: body_handle,
-                                    angle: 0.,
-                                }
-                            })
-                            .collect::<Vec<_>>();
+                            Component {
+                                pos: vec2(x, y),
+                                physics_handle: body_handle,
+                                angle: 0.,
+                            }
+                        })
+                        .collect::<Vec<_>>();
 
                         let connections = vec![(0, 1)];
 

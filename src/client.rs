@@ -71,7 +71,12 @@ impl MainState {
 
         let (mouse_x, mouse_y) = mouse_position();
 
-        ClientInput { x_input, y_input, mouse_x, mouse_y }
+        ClientInput {
+            x_input,
+            y_input,
+            mouse_x,
+            mouse_y,
+        }
     }
 
     fn update(
