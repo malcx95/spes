@@ -197,11 +197,10 @@ async fn main() -> Result<()> {
                 egui::Window::new("minimap").show(ctx, |ui| {
                     let (response, painter) =
                         ui.allocate_painter(ui.available_size_before_wrap(), Sense::hover());
-                    let player_pos = main_state
+                    let Some(player_pos) = main_state
                         .client_state
                         .my_player(main_state.my_id, &main_state.game_state)
-                        .unwrap()
-                        .position();
+                        .map(|p| p.position()) else { return; };
                     let inner = response.rect.shrink(10.);
                     let px = inner.min.x + (inner.width() * (player_pos.x / WORLD_SIZE));
                     let py = inner.min.y + (inner.height() * (player_pos.y / WORLD_SIZE));
@@ -218,10 +217,9 @@ async fn main() -> Result<()> {
                     );
                 });
                 egui::Window::new("debug").show(ctx, |ui| {
-                    let player = main_state
+                    let Some(player) = main_state
                         .client_state
-                        .my_player(main_state.my_id, &main_state.game_state)
-                        .unwrap();
+                        .my_player(main_state.my_id, &main_state.game_state) else { return; };
                     ui.style_mut().wrap = Some(false);
                     ui.monospace(format!(
                         "player position: x: {:4.0}, y: {:4.0}",
@@ -232,7 +230,7 @@ async fn main() -> Result<()> {
                     ui.monospace(format!(
                         "player angle: {:1.3}",
                         player.angle() + std::f32::consts::PI
-                    ))
+                    ));
                 });
             });
 
