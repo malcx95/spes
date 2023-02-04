@@ -5,6 +5,8 @@ use std::net::TcpStream;
 
 use serde_derive::{Deserialize, Serialize};
 
+use crate::math;
+
 pub struct MessageReader {
     pub stream: TcpStream,
     byte_queue: VecDeque<u8>,
@@ -112,6 +114,7 @@ impl ClientInput {
 #[derive(Serialize, Deserialize)]
 pub enum ClientMessage {
     Input(ClientInput),
+    AddComponent{world_pos: math::Vec2},
     JoinGame { name: String },
     Shoot,
 }
