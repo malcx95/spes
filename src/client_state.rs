@@ -1,11 +1,11 @@
 use std::f32::consts::PI;
 
-use libplen::messages::ClientMessage;
 use ::rand::Rng;
 use color_eyre::Result;
 use egui_macroquad::egui::emath::exponential_smooth_factor;
 use libplen::constants;
 use libplen::gamestate::GameState;
+use libplen::messages::ClientMessage;
 use libplen::player::Player;
 use macroquad::prelude::*;
 
@@ -104,7 +104,7 @@ impl ClientState {
                         screen_width() / 2. - self_pos.x + component.pos.x,
                         screen_height() / 2. - self_pos.y + component.pos.y,
                     );
-                    rendering::draw_texture(assets.malcolm, x, y, component.angle);
+                    rendering::draw_texture_centered(assets.malcolm, x, y, component.angle);
 
                     draw_circle_lines(x, y, 64., 1., GREEN);
                     draw_circle_lines(x, y, 32., 1., RED);

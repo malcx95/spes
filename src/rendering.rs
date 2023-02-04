@@ -14,6 +14,15 @@ pub fn draw_texture(texture: texture::Texture2D, x: f32, y: f32, angle: f32) {
     texture::draw_texture_ex(texture, x, y, WHITE, params);
 }
 
+pub fn draw_texture_centered(texture: texture::Texture2D, x: f32, y: f32, angle: f32) {
+    draw_texture(
+        texture,
+        x - texture.width() / 2.,
+        y - texture.height() / 2.,
+        angle,
+    )
+}
+
 /*
 pub fn draw_texture_pivot(texture: texture::Texture2D, x: f32, y: f32, angle: f32, pivot_x: f32, pivot_y: f32) {
     let params = texture::DrawTextureParams {
