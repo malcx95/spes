@@ -16,7 +16,7 @@ use libplen::constants::WORLD_SIZE;
 use libplen::gamestate;
 use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage};
 
-use macroquad::prelude::*;
+use macroquad::{prelude::*, window};
 
 fn send_client_message(msg: &ClientMessage, stream: &mut TcpStream) {
     let data = bincode::serialize(msg).expect("Failed to encode message");
@@ -38,6 +38,7 @@ enum StateResult {
 
 struct MainState {
     my_id: u64,
+    camera: Camera2D,
     game_state: gamestate::GameState,
     client_state: client_state::ClientState,
     last_time: Instant,
@@ -47,6 +48,12 @@ impl MainState {
     fn new(my_id: u64) -> MainState {
         MainState {
             my_id,
+            camera: Camera2D::from_display_rect(Rect {
+                x: 0.,
+                y: 0.,
+                w: window::screen_width(),
+                h: window::screen_height(),
+            }),
             game_state: gamestate::GameState::new(),
             client_state: client_state::ClientState::new(my_id),
             last_time: Instant::now(),
@@ -237,6 +244,8 @@ async fn main() -> Result<()> {
     };
 
     let mut main_state = MainState::new(my_id);
+    main_state.camera.target = vec2(5000., 5000.);
+    set_camera(&main_state.camera);
 
     let name = whoami::username();
 

@@ -149,7 +149,7 @@ impl ClientState {
                 Self::draw_shield(player, self_pos.x, self_pos.y);
 
                 for component in &player.components {
-                    let (x, y) = (center.x + component.pos.x, center.y + component.pos.y);
+                    let (x, y) = (component.pos.x, component.pos.y);
 
                     use ComponentSpecialization as CS;
                     let spec = &component.spec;
