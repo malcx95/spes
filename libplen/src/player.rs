@@ -24,6 +24,7 @@ pub struct Component {
 pub enum ComponentSpecialization {
     Root,
     Shield,
+    Thrusters,
     Cannon { cooldown: f32, aim: bool },
 }
 
@@ -32,6 +33,7 @@ impl ComponentSpecialization {
     pub fn addable() -> Vec<ComponentSpecialization> {
         vec![
             ComponentSpecialization::Shield,
+            ComponentSpecialization::Thrusters,
             ComponentSpecialization::Cannon{cooldown: 0., aim: true},
             ComponentSpecialization::Cannon{cooldown: 0., aim: false},
         ]

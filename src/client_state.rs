@@ -170,10 +170,11 @@ impl ClientState {
                     }
 
                     match spec {
-                        CS::Root | CS::Shield | CS::Cannon { aim: false, .. } => {
+                        CS::Root | CS::Shield | CS::Cannon { aim: false, .. } | CS::Thrusters => {
                             let fg_sprite = match spec {
                                 CS::Root => assets.root_node,
                                 CS::Shield => assets.shield,
+                                CS::Thrusters => assets.thrusters,
                                 CS::Cannon { .. } => assets.cannon,
                             };
 

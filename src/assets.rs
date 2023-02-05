@@ -28,6 +28,7 @@ pub struct Assets {
     pub node_bg: Texture2D,
     pub root_node: Texture2D,
     pub cannon: Texture2D,
+    pub thrusters: Texture2D,
     pub shield: Texture2D,
     pub stars: Stars,
     pub egui_textures: EguiTextures,
@@ -71,6 +72,7 @@ impl Assets {
                 ),
             },
             bullet: load_pixelart!("../resources/ship/laser.png"),
+            thrusters: load_pixelart!("../resources/ship/thrusters.png"),
         };
         Ok(assets)
     }
