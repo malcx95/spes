@@ -333,6 +333,8 @@ impl Server {
             .translation(vector![world_x, world_y])
             .build();
 
+        let local_transform = rb.position().clone();
+
         let mut collider_builder = ColliderBuilder::ball(32.).restitution(0.2).friction(0.);
         if !components.is_empty() {
             collider_builder = collider_builder.density(0.000001);
@@ -354,12 +356,18 @@ impl Server {
 
         // Joint if we are adding a sub-component
         if components.len() != 1 {
+            let root_transform = p
+                .rigid_body_set
+                .get(components[0].physics_handle)
+                .unwrap()
+                .position();
             let joint = FixedJointBuilder::new()
-                .local_anchor1(point![0.0, 0.0])
-                .local_anchor2(point![
-                    components[0].pos.x - world_x,
-                    components[0].pos.y - world_y
-                ]);
+                .local_anchor1(root_transform.inverse_transform_point(&point![world_x, world_y]))
+                .local_anchor2(point![0., 0.]);
+            // .local_anchor2(local_transform.inverse_transform_point(&point![
+            //     world_x,
+            //     world_y
+            // ]));
 
             p.multibody_joint_set.insert(
                 components[0].physics_handle,
