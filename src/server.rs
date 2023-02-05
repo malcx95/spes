@@ -270,7 +270,7 @@ impl Server {
                             player.add_component(
                                 specialization.clone(),
                                 p,
-                                (world_pos.x, world_pos.y)
+                                (world_pos.x, world_pos.y),
                             )
                         }
                     }
@@ -300,7 +300,6 @@ impl Server {
         self.connections
             .retain(|client| !clients_to_delete.contains(&client.id));
     }
-
 }
 
 fn main() {

@@ -131,8 +131,20 @@ impl ClientState {
         if let Some(p) = player {
             if p.requesting_death {
                 clear_background(RED);
-                draw_text("u ded, spes no inifity", screen_width() as f32 / 2.0, screen_height() as f32 / 2.0, 100., BLACK);
-                draw_text("pres D for again", screen_width() as f32 / 2.0, screen_height() as f32 / 2.0 + 100., 70., BLACK);
+                draw_text(
+                    "u ded, spes no inifity",
+                    screen_width() as f32 / 2.0,
+                    screen_height() as f32 / 2.0,
+                    100.,
+                    BLACK,
+                );
+                draw_text(
+                    "pres D for again",
+                    screen_width() as f32 / 2.0,
+                    screen_height() as f32 / 2.0 + 100.,
+                    70.,
+                    BLACK,
+                );
             } else {
                 if whoami::hostname() == "ares" || whoami::hostname() == "spirit" {
                     Self::draw_background(self, p.position().x, p.position().y, p.velocity());
@@ -192,7 +204,10 @@ impl ClientState {
                         }
 
                         match spec {
-                            CS::Root | CS::Shield | CS::Cannon { aim: false, .. } | CS::Thrusters => {
+                            CS::Root
+                            | CS::Shield
+                            | CS::Cannon { aim: false, .. }
+                            | CS::Thrusters => {
                                 let fg_sprite = match spec {
                                     CS::Root => assets.root_node,
                                     CS::Shield => assets.shield,
@@ -250,7 +265,6 @@ impl ClientState {
                     }
                 }
             }
-
         }
 
         Ok(())
