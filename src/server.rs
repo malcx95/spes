@@ -258,7 +258,6 @@ impl Server {
                             name = "Mr Whitespace".into();
                         }
 
-
                         let mut player = Player::new(client.id, name, p);
                         player.set_num_shield_points(20, p);
                         self.state.add_player(player);

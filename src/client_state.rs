@@ -165,6 +165,23 @@ impl ClientState {
                         };
 
                         if let Some(s) = bg_sprite {
+                            if let CS::Thrusters = spec {
+                                let angle = if player.input_y < -0.5 {
+                                    0.
+                                } else {
+                                    std::f32::consts::PI
+                                };
+
+                                if player.input_y.abs() > 0.5 {
+                                    rendering::draw_texture_centered_size(
+                                        assets.thrust_flame,
+                                        x,
+                                        y,
+                                        component.angle - angle,
+                                        Vec2 { x: 128., y: 128. },
+                                    );
+                                }
+                            }
                             rendering::draw_texture_centered_size(
                                 s,
                                 x,

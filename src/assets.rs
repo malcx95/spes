@@ -29,6 +29,7 @@ pub struct Assets {
     pub root_node: Texture2D,
     pub cannon: Texture2D,
     pub thrusters: Texture2D,
+    pub thrust_flame: Texture2D,
     pub shield: Texture2D,
     pub stars: Stars,
     pub egui_textures: EguiTextures,
@@ -64,6 +65,7 @@ impl Assets {
             root_node: load_pixelart!("../resources/ship/root2.png"),
             shield: load_pixelart!("../resources/ship/shield.png"),
             cannon: load_pixelart!("../resources/cannon1.png"),
+            thrust_flame: load_pixelart!("../resources/ship/thruster.png"),
             stars: Stars::new(),
             egui_textures: EguiTextures {
                 cannon: RetainedImage::from_color_image(
