@@ -25,6 +25,7 @@ pub enum ComponentSpecialization {
     Root,
     Shield,
     Thrusters,
+    Reactionwheel{angle: f32},
     Cannon { cooldown: f32, aim: bool },
 }
 
@@ -34,6 +35,7 @@ impl ComponentSpecialization {
         vec![
             ComponentSpecialization::Shield,
             ComponentSpecialization::Thrusters,
+            ComponentSpecialization::Reactionwheel{angle: 0.},
             ComponentSpecialization::Cannon{cooldown: 0., aim: true},
             ComponentSpecialization::Cannon{cooldown: 0., aim: false},
         ]
@@ -239,7 +241,7 @@ impl Player {
             ),
         );
         self.add_component(
-            ComponentSpecialization::Thrusters,
+            ComponentSpecialization::Reactionwheel{angle: 0.},
             p,
             (
                 constants::WORLD_SIZE / 2. - constants::MODULE_RADIUS * 2.,
@@ -418,6 +420,12 @@ impl Player {
                     },
                     ..*c
                 }),
+                CS::Reactionwheel{angle} => {
+                    Some(Component {
+                        spec: CS::Reactionwheel{angle: angle + self.input_x},
+                        ..*c
+                    })
+                }
                 _ => Some(c.clone()),
             })
             .collect();

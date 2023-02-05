@@ -34,6 +34,9 @@ pub struct Assets {
     pub stars: Stars,
     pub egui_textures: EguiTextures,
     pub bullet: Texture2D,
+    pub reaction_wheel_bot: Texture2D,
+    pub reaction_wheel_mid: Texture2D,
+    pub reaction_wheel_top: Texture2D,
 }
 
 impl Stars {
@@ -75,6 +78,9 @@ impl Assets {
             },
             bullet: load_pixelart!("../resources/ship/laser.png"),
             thrusters: load_pixelart!("../resources/ship/thrusters.png"),
+            reaction_wheel_bot: load_pixelart!("../resources/ship/reaction_wheel_bottom.png"),
+            reaction_wheel_mid: load_pixelart!("../resources/ship/reaction_wheel_wheel.png"),
+            reaction_wheel_top: load_pixelart!("../resources/ship/reaction_wheel_top.png"),
         };
         Ok(assets)
     }

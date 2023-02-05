@@ -173,6 +173,7 @@ impl ClientState {
 
                         let bg_sprite = match spec {
                             CS::Cannon { .. } => Some(assets.node_bg),
+                            CS::Reactionwheel { .. } => Some(assets.reaction_wheel_bot),
                             _ => None,
                         };
 
@@ -214,6 +215,7 @@ impl ClientState {
                                     CS::Shield => assets.shield,
                                     CS::Thrusters => assets.thrusters,
                                     CS::Cannon { .. } => assets.cannon,
+                                    _ => unreachable!(),
                                 };
 
                                 rendering::draw_texture_centered_size(
@@ -221,6 +223,22 @@ impl ClientState {
                                     x,
                                     y,
                                     component.angle,
+                                    Vec2 { x: 64., y: 64. },
+                                );
+                            }
+                            CS::Reactionwheel { angle } => {
+                                rendering::draw_texture_centered_size(
+                                    assets.reaction_wheel_mid,
+                                    x,
+                                    y,
+                                    std::f32::consts::PI - angle,
+                                    Vec2 { x: 64., y: 64. },
+                                );
+                                rendering::draw_texture_centered_size(
+                                    assets.reaction_wheel_top,
+                                    x,
+                                    y,
+                                    std::f32::consts::PI,
                                     Vec2 { x: 64., y: 64. },
                                 );
                             }
