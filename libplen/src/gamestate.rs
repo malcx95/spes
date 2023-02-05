@@ -12,6 +12,7 @@ pub struct GameState {
     pub players: Vec<Player>,
     pub bullets: Vec<Bullet>,
     pub asteroids: Vec<Asteroid>,
+    pub asteroid_timer: i32,
     // put server side game state stuff here
 }
 
@@ -91,6 +92,7 @@ impl GameState {
             players: Vec::new(),
             bullets: Vec::new(),
             asteroids: asteroids,
+            asteroid_timer: 0,
             // init server side game state stuff here
         }
     }
@@ -104,6 +106,13 @@ impl GameState {
      *  )
      */
     pub fn update(&mut self, delta: f32, p: &mut PhysicsState) {
+        if self.asteroid_timer == 0 {
+            self.asteroid_timer = 1000;
+            self.asteroids.push(Asteroid::new(p));
+            println!("NEW ASTEROID!");
+        }
+        self.asteroid_timer -= 1;
+
         for player in &mut self.players {
             player.update(delta, &mut self.bullets, p);
         }
