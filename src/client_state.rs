@@ -3,7 +3,7 @@ use ::rand::{thread_rng, Rng};
 use color_eyre::Result;
 use egui_macroquad::egui::emath::exponential_smooth_factor;
 use egui_macroquad::egui::{Color32, Rounding, Sense, Ui};
-use libplen::constants::{WORLD_SIZE, ASTEROID_SIZE};
+use libplen::constants::{ASTEROID_SIZE, WORLD_SIZE};
 use libplen::gamestate::GameState;
 use libplen::messages::ClientMessage;
 use libplen::player::{ComponentSpecialization, Player};
@@ -172,7 +172,7 @@ impl ClientState {
                         x,
                         y,
                         asteroid.angle,
-                        Vec2::new(ASTEROID_SIZE, ASTEROID_SIZE)
+                        Vec2::new(ASTEROID_SIZE, ASTEROID_SIZE),
                     );
                 }
 

@@ -79,16 +79,16 @@ impl Server {
         let multibody_joint_set = MultibodyJointSet::new();
         let ccd_solver = CCDSolver::new();
         let mut p = PhysicsState {
-                rigid_body_set,
-                collider_set,
-                physics_pipeline,
-                island_manager,
-                broad_phase,
-                narrow_phase,
-                impulse_joint_set,
-                multibody_joint_set,
-                ccd_solver,
-            };
+            rigid_body_set,
+            collider_set,
+            physics_pipeline,
+            island_manager,
+            broad_phase,
+            narrow_phase,
+            impulse_joint_set,
+            multibody_joint_set,
+            ccd_solver,
+        };
 
         Self {
             listener,

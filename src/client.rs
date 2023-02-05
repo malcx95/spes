@@ -181,6 +181,12 @@ impl MainState {
         }
     }
 
+    fn draw_minimap_asteroids(&self, painter: &mut Painter, inner: &egui_macroquad::egui::Rect) {
+        for asteroid in &self.game_state.asteroids {
+            self.draw_minimap_player(painter, inner, asteroid.x, asteroid.y, Color32::GREEN);
+        }
+    }
+
     fn draw_minimap_others(&self, painter: &mut Painter, inner: &egui_macroquad::egui::Rect) {
         for player in &self.game_state.players {
             if player.id == self.my_id {
@@ -213,6 +219,7 @@ impl MainState {
 
         self.draw_minimap_me(&mut painter, &inner);
         self.draw_minimap_others(&mut painter, &inner);
+        self.draw_minimap_asteroids(&mut painter, &inner);
     }
 }
 
