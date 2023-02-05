@@ -203,7 +203,7 @@ impl Player {
         self.requesting_death = false;
 
         for comp in &mut self.components {
-            comp.destroy_physics(p);
+            //comp.destroy_physics(p);
         }
         self.components = vec![];
         self.add_component(
