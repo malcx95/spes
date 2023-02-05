@@ -2,6 +2,8 @@ use ::rand::seq::SliceRandom;
 use ::rand::{thread_rng, Rng};
 use color_eyre::Result;
 use egui_macroquad::egui::emath::exponential_smooth_factor;
+use egui_macroquad::egui::{Color32, Rounding, Sense, Ui};
+use libplen::constants::WORLD_SIZE;
 use libplen::gamestate::GameState;
 use libplen::messages::ClientMessage;
 use libplen::player::{ComponentSpecialization, Player};

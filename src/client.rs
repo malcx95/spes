@@ -9,7 +9,7 @@ use std::time::Instant;
 use client_state::ClientState;
 use color_eyre::Result;
 use egui::{Align, Layout, Sense};
-use egui_macroquad::egui::{self, Color32, Rounding, Stroke};
+use egui_macroquad::egui::{self, Color32, Painter, Rounding, Stroke, Ui};
 
 use assets::Assets;
 use libplen::constants::WORLD_SIZE;
@@ -147,6 +147,66 @@ impl MainState {
     }
 }
 
+/// Minimap
+impl MainState {
+    fn draw_minimap_player(
+        &self,
+        painter: &mut Painter,
+        inner: &egui_macroquad::egui::Rect,
+        x: f32,
+        y: f32,
+        color: Color32,
+    ) {
+        let px = inner.min.x + (inner.width() * (x / WORLD_SIZE));
+        let py = inner.min.y + (inner.height() * (y / WORLD_SIZE));
+        painter.rect_filled(
+            egui_macroquad::egui::Rect::from_center_size((px, py).into(), (6., 6.).into()),
+            Rounding::none(),
+            color,
+        );
+    }
+
+    fn draw_minimap_me(&self, painter: &mut Painter, inner: &egui_macroquad::egui::Rect) {
+        let Some(player_pos) = self
+            .client_state
+            .my_player(self.my_id, &self.game_state)
+            .map(|p| p.position()) else { return; };
+        self.draw_minimap_player(painter, inner, player_pos.x, player_pos.y, Color32::RED);
+    }
+
+    fn draw_minimap_others(&self, painter: &mut Painter, inner: &egui_macroquad::egui::Rect) {
+        for player in &self.game_state.players {
+            if player.id == self.my_id {
+                continue;
+            }
+            self.draw_minimap_player(
+                painter,
+                inner,
+                player.position().x,
+                player.position().y,
+                Color32::WHITE,
+            );
+        }
+    }
+
+    pub fn draw_minimap(&self, ui: &mut Ui) {
+        let (response, mut painter) =
+            ui.allocate_painter(ui.available_size_before_wrap(), Sense::hover());
+        let inner = response.rect.shrink(10.);
+
+        // Background
+        painter.rect(
+            inner,
+            Rounding::none(),
+            Color32::BLACK,
+            Stroke::new(5., Color32::WHITE),
+        );
+
+        self.draw_minimap_me(&mut painter, &inner);
+        self.draw_minimap_others(&mut painter, &inner);
+    }
+}
+
 #[macroquad::main("BasicShapes")]
 async fn main() -> Result<()> {
     color_eyre::install()?;
@@ -224,26 +284,7 @@ async fn main() -> Result<()> {
                     )
                 });
                 egui::Window::new("minimap").show(ctx, |ui| {
-                    let (response, painter) =
-                        ui.allocate_painter(ui.available_size_before_wrap(), Sense::hover());
-                    let Some(player_pos) = main_state
-                        .client_state
-                        .my_player(main_state.my_id, &main_state.game_state)
-                        .map(|p| p.position()) else { return; };
-                    let inner = response.rect.shrink(10.);
-                    let px = inner.min.x + (inner.width() * (player_pos.x / WORLD_SIZE));
-                    let py = inner.min.y + (inner.height() * (player_pos.y / WORLD_SIZE));
-                    painter.rect(
-                        inner,
-                        Rounding::none(),
-                        Color32::BLACK,
-                        Stroke::new(5., Color32::WHITE),
-                    );
-                    painter.rect_filled(
-                        egui::Rect::from_center_size((px, py).into(), (6., 6.).into()),
-                        Rounding::none(),
-                        Color32::RED,
-                    );
+                    main_state.draw_minimap(ui);
                 });
                 egui::Window::new("debug").show(ctx, |ui| {
                     let Some(player) = main_state
