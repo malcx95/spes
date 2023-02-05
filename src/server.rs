@@ -14,9 +14,8 @@ use unicode_truncate::UnicodeTruncateStr;
 use libplen::constants;
 use libplen::gamestate;
 use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage};
-use libplen::player::Player;
 use libplen::physics::PhysicsState;
-
+use libplen::player::Player;
 
 fn send_bytes(bytes: &[u8], stream: &mut TcpStream) -> io::Result<()> {
     let mut start = 0;
