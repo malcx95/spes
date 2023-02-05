@@ -160,18 +160,25 @@ impl MainState {
         let px = inner.min.x + (inner.width() * (x / WORLD_SIZE));
         let py = inner.min.y + (inner.height() * (y / WORLD_SIZE));
         painter.rect_filled(
-            egui_macroquad::egui::Rect::from_center_size((px, py).into(), (6., 6.).into()),
+            egui_macroquad::egui::Rect::from_center_size((px, py).into(), (3., 3.).into()),
             Rounding::none(),
             color,
         );
     }
 
     fn draw_minimap_me(&self, painter: &mut Painter, inner: &egui_macroquad::egui::Rect) {
-        let Some(player_pos) = self
+        let Some(player) = self
             .client_state
-            .my_player(self.my_id, &self.game_state)
-            .map(|p| p.position()) else { return; };
-        self.draw_minimap_player(painter, inner, player_pos.x, player_pos.y, Color32::RED);
+            .my_player(self.my_id, &self.game_state) else { return; };
+        for component in &player.components {
+            self.draw_minimap_player(
+                painter,
+                inner,
+                component.pos.x,
+                component.pos.y,
+                Color32::RED,
+            );
+        }
     }
 
     fn draw_minimap_others(&self, painter: &mut Painter, inner: &egui_macroquad::egui::Rect) {
@@ -179,13 +186,15 @@ impl MainState {
             if player.id == self.my_id {
                 continue;
             }
-            self.draw_minimap_player(
-                painter,
-                inner,
-                player.position().x,
-                player.position().y,
-                Color32::WHITE,
-            );
+            for component in &player.components {
+                self.draw_minimap_player(
+                    painter,
+                    inner,
+                    component.pos.x,
+                    component.pos.y,
+                    Color32::WHITE,
+                );
+            }
         }
     }
 
