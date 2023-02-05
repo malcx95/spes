@@ -61,7 +61,17 @@ pub struct Player {
     pub is_building: bool,
 
     pub shield: Shield,
-    pub shielding: bool
+    pub shielding: bool,
+
+    pub requesting_death: bool,
+}
+
+impl Component {
+
+    pub fn destroy_physics(&mut self, p: &mut PhysicsState) {
+        p.rigid_body_set.remove(self.physics_handle, &mut p.island_manager, &mut p.collider_set, &mut p.impulse_joint_set, &mut p.multibody_joint_set, true);
+    }
+
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -136,13 +146,14 @@ impl Shield {
 
             i += 1; // deal with it the sushi is soon here
         }
+
     }
 }
 
 impl Player {
-    pub fn new(id: u64, name: String, components: Vec<Component>) -> Player {
-        let mut shield = Shield::new();
-        Player {
+    pub fn new(id: u64, name: String, p: &mut PhysicsState) -> Player {
+        let shield = Shield::new();
+        let mut player = Player {
             id,
             name,
 
@@ -156,7 +167,7 @@ impl Player {
 
             aim_angle: 0.,
 
-            components,
+            components: vec![],
 
             shoot: false,
             shield,
@@ -164,6 +175,103 @@ impl Player {
             is_building: false,
 
             shielding: false,
+
+            requesting_death: false,
+        };
+
+        player.reset(p);
+        player
+    }
+
+    pub fn reset(&mut self, p: &mut PhysicsState) {
+        self.input_x = 0.;
+        self.input_y = 0.;
+
+        self.mouse_x = 0.;
+        self.mouse_y = 0.;
+
+        self.mouse_world_pos = None;
+
+        self.aim_angle = 0.;
+
+        self.shoot = false;
+
+        self.is_building = false;
+
+        self.shielding = false;
+
+        self.requesting_death = false;
+
+        for comp in &mut self.components {
+            comp.destroy_physics(p);
+        }
+        self.components = vec![];
+        self.add_component(
+            ComponentSpecialization::Root,
+            p,
+            (constants::WORLD_SIZE / 2., constants::WORLD_SIZE / 2.)
+        );
+        self.add_component(
+            ComponentSpecialization::Cannon {
+                cooldown: 0.0,
+                aim: rand::random::<bool>(),
+            },
+            p,
+            (
+                constants::WORLD_SIZE / 2.,
+                constants::WORLD_SIZE / 2. + constants::MODULE_RADIUS * 2.,
+            ),
+        );
+    }
+
+    pub fn add_component(
+        &mut self,
+        specialization: ComponentSpecialization,
+        p: &mut PhysicsState,
+        (world_x, world_y): (f32, f32)
+    ) {
+        let rb = RigidBodyBuilder::dynamic()
+            .translation(vector![world_x, world_y])
+            .build();
+
+        let local_transform = rb.position().clone();
+
+        let mut collider_builder = ColliderBuilder::ball(32.).restitution(0.2).friction(0.);
+        if !self.components.is_empty() {
+            collider_builder = collider_builder.density(0.000001);
+        }
+        let collider = collider_builder.build();
+
+        let body_handle = p.rigid_body_set.insert(rb);
+        p.collider_set
+            .insert_with_parent(collider, body_handle, &mut p.rigid_body_set);
+
+        let new = Component {
+            pos: vec2(world_x, world_y),
+            physics_handle: body_handle,
+            angle: 0.,
+            spec: specialization,
+        };
+
+        self.components.push(new);
+
+        // Joint if we are adding a sub-component
+        if self.components.len() != 1 {
+            let root_transform = p
+                .rigid_body_set
+                .get(self.components[0].physics_handle)
+                .unwrap()
+                .position();
+            let joint = FixedJointBuilder::new()
+                .local_anchor1(root_transform.inverse_transform_point(&point![world_x, world_y]))
+                .local_anchor2(point![0., 0.]);
+
+            p.multibody_joint_set.insert(
+                self.components[0].physics_handle,
+                self.components[self.components.len() - 1].physics_handle,
+                joint,
+                true,
+            );
         }
     }
 
@@ -220,6 +328,17 @@ impl Player {
         self.update_components(&mut p.rigid_body_set, bullets, delta);
 
         self.shield_update(p);
+
+        let pos = self.position();
+        self.requesting_death = self.requesting_death
+            || pos.y < 0.
+            || pos.y > constants::WORLD_SIZE
+            || pos.x < 0.
+            || pos.x > constants::WORLD_SIZE;
+
+        if self.requesting_death && self.input_x > 0. {
+            self.reset(p);
+        }
     }
 
     pub fn update_components(

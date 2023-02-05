@@ -129,106 +129,111 @@ impl ClientState {
 
         let player = self.my_player(my_id, game_state);
         if let Some(p) = player {
-            if whoami::hostname() == "ares" || whoami::hostname() == "spirit" {
-                Self::draw_background(self, p.position().x, p.position().y, p.velocity());
+            if p.requesting_death {
+                clear_background(RED);
+                draw_text("u ded, spes no inifity", screen_width() as f32 / 2.0, screen_height() as f32 / 2.0, 100., BLACK);
+                draw_text("pres D for again", screen_width() as f32 / 2.0, screen_height() as f32 / 2.0 + 100., 70., BLACK);
             } else {
-                Self::draw_background2(self, assets, p.position().x, p.position().y);
-            }
+                if whoami::hostname() == "ares" || whoami::hostname() == "spirit" {
+                    Self::draw_background(self, p.position().x, p.position().y, p.velocity());
+                } else {
+                    Self::draw_background2(self, assets, p.position().x, p.position().y);
+                }
 
-            let self_pos = p.position();
-            let _self_angle = p.angle();
+                let self_pos = p.position();
+                let _self_angle = p.angle();
 
-            let center = Vec2::new(
-                screen_width() as f32 / 2.0 - self_pos.x,
-                screen_height() as f32 / 2.0 - self_pos.y,
-            );
+                let center = Vec2::new(
+                    screen_width() as f32 / 2.0 - self_pos.x,
+                    screen_height() as f32 / 2.0 - self_pos.y,
+                );
 
-            Self::draw_bounds(self_pos.x, self_pos.y);
+                Self::draw_bounds(self_pos.x, self_pos.y);
 
-            for player in &game_state.players {
-                Self::draw_shield(player, self_pos.x, self_pos.y);
+                for player in &game_state.players {
+                    Self::draw_shield(player, self_pos.x, self_pos.y);
 
-                for component in &player.components {
-                    let (x, y) = (center.x + component.pos.x, center.y + component.pos.y);
+                    for component in &player.components {
+                        let (x, y) = (center.x + component.pos.x, center.y + component.pos.y);
 
-                    use ComponentSpecialization as CS;
-                    let spec = &component.spec;
+                        use ComponentSpecialization as CS;
+                        let spec = &component.spec;
 
-                    let bg_sprite = match spec {
-                        CS::Cannon { .. } => Some(assets.node_bg),
-                        _ => None,
-                    };
+                        let bg_sprite = match spec {
+                            CS::Cannon { .. } => Some(assets.node_bg),
+                            _ => None,
+                        };
 
-                    if let Some(s) = bg_sprite {
-                        rendering::draw_texture_centered_size(
-                            s,
-                            x,
-                            y,
-                            component.angle,
-                            Vec2 { x: 64., y: 64. },
-                        );
-                    }
-
-                    match spec {
-                        CS::Root | CS::Shield | CS::Cannon { aim: false, .. } | CS::Thrusters => {
-                            let fg_sprite = match spec {
-                                CS::Root => assets.root_node,
-                                CS::Shield => assets.shield,
-                                CS::Thrusters => assets.thrusters,
-                                CS::Cannon { .. } => assets.cannon,
-                            };
-
+                        if let Some(s) = bg_sprite {
                             rendering::draw_texture_centered_size(
-                                fg_sprite,
+                                s,
                                 x,
                                 y,
                                 component.angle,
                                 Vec2 { x: 64., y: 64. },
                             );
                         }
-                        CS::Cannon { aim: true, .. } => {
-                            let angle = player
-                                .mouse_world_pos
-                                .map(|p| (p - component.pos).atan2())
-                                .unwrap_or(0.0);
-                            rendering::draw_texture_centered_size(
-                                assets.cannon,
-                                x,
-                                y,
-                                std::f32::consts::PI - angle,
-                                Vec2 { x: 64., y: 64. },
-                            );
-                        }
-                    };
 
-                    let debug = false;
-                    if debug {
-                        draw_circle_lines(x, y, 64., 1., GREEN);
-                        draw_circle_lines(x, y, 32., 1., RED);
+                        match spec {
+                            CS::Root | CS::Shield | CS::Cannon { aim: false, .. } | CS::Thrusters => {
+                                let fg_sprite = match spec {
+                                    CS::Root => assets.root_node,
+                                    CS::Shield => assets.shield,
+                                    CS::Thrusters => assets.thrusters,
+                                    CS::Cannon { .. } => assets.cannon,
+                                };
+
+                                rendering::draw_texture_centered_size(
+                                    fg_sprite,
+                                    x,
+                                    y,
+                                    component.angle,
+                                    Vec2 { x: 64., y: 64. },
+                                );
+                            }
+                            CS::Cannon { aim: true, .. } => {
+                                let angle = player
+                                    .mouse_world_pos
+                                    .map(|p| (p - component.pos).atan2())
+                                    .unwrap_or(0.0);
+                                rendering::draw_texture_centered_size(
+                                    assets.cannon,
+                                    x,
+                                    y,
+                                    std::f32::consts::PI - angle,
+                                    Vec2 { x: 64., y: 64. },
+                                );
+                            }
+                        };
+
+                        let debug = false;
+                        if debug {
+                            draw_circle_lines(x, y, 64., 1., GREEN);
+                            draw_circle_lines(x, y, 32., 1., RED);
+                        }
+                    }
+                }
+                for bullet in &game_state.bullets {
+                    rendering::draw_texture_centered(
+                        assets.bullet,
+                        center.x + bullet.pos.x,
+                        center.y + bullet.pos.y,
+                        bullet.angle,
+                    );
+                }
+                if self.is_building {
+                    let (x, y) = mouse_position();
+
+                    if self.is_valid_component_pos(my_id, game_state, Self::mouse_world_pos(p)) {
+                        draw_circle_lines(x, y, constants::MODULE_RADIUS, 1., BLUE);
+                        draw_circle_lines(x, y, constants::MODULE_RADIUS * 2., 1., PURPLE)
+                    } else {
+                        draw_circle_lines(x, y, constants::MODULE_RADIUS, 1., ORANGE);
+                        draw_circle_lines(x, y, constants::MODULE_RADIUS * 2., 1., ORANGE)
                     }
                 }
             }
 
-            for bullet in &game_state.bullets {
-                rendering::draw_texture_centered(
-                    assets.bullet,
-                    center.x + bullet.pos.x,
-                    center.y + bullet.pos.y,
-                    bullet.angle,
-                );
-            }
-
-            if self.is_building {
-                let (x, y) = mouse_position();
-
-                if self.is_valid_component_pos(my_id, game_state, Self::mouse_world_pos(p)) {
-                    draw_circle_lines(x, y, constants::MODULE_RADIUS, 1., BLUE);
-                    draw_circle_lines(x, y, constants::MODULE_RADIUS * 2., 1., PURPLE)
-                } else {
-                    draw_circle_lines(x, y, constants::MODULE_RADIUS, 1., ORANGE);
-                    draw_circle_lines(x, y, constants::MODULE_RADIUS * 2., 1., ORANGE)
-                }
-            }
         }
 
         Ok(())

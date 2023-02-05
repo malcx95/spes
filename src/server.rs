@@ -258,27 +258,8 @@ impl Server {
                             name = "Mr Whitespace".into();
                         }
 
-                        let mut components = vec![];
-                        Self::add_component(
-                            ComponentSpecialization::Root,
-                            p,
-                            (constants::WORLD_SIZE / 2., constants::WORLD_SIZE / 2.),
-                            &mut components,
-                        );
-                        Self::add_component(
-                            ComponentSpecialization::Cannon {
-                                cooldown: 0.0,
-                                aim: rand::random::<bool>(),
-                            },
-                            p,
-                            (
-                                constants::WORLD_SIZE / 2.,
-                                constants::WORLD_SIZE / 2. + constants::MODULE_RADIUS * 2.,
-                            ),
-                            &mut components,
-                        );
 
-                        let mut player = Player::new(client.id, name, components);
+                        let mut player = Player::new(client.id, name, p);
                         player.set_num_shield_points(20, p);
                         self.state.add_player(player);
                     }
@@ -287,11 +268,10 @@ impl Server {
                         specialization,
                     }) => {
                         for player in self.state.players.iter_mut().filter(|p| p.id == client.id) {
-                            Self::add_component(
+                            player.add_component(
                                 specialization.clone(),
                                 p,
-                                (world_pos.x, world_pos.y),
-                                &mut player.components,
+                                (world_pos.x, world_pos.y)
                             )
                         }
                     }
@@ -322,65 +302,11 @@ impl Server {
             .retain(|client| !clients_to_delete.contains(&client.id));
     }
 
-    fn add_component(
-        specialization: ComponentSpecialization,
-        p: &mut PhysicsState,
-        (world_x, world_y): (f32, f32),
-        components: &mut Vec<Component>,
-    ) {
-        let rb = RigidBodyBuilder::dynamic()
-            .translation(vector![world_x, world_y])
-            .build();
-
-        let local_transform = rb.position().clone();
-
-        let mut collider_builder = ColliderBuilder::ball(32.).restitution(0.2).friction(0.);
-        if !components.is_empty() {
-            collider_builder = collider_builder.density(0.000001);
-        }
-        let collider = collider_builder.build();
-
-        let body_handle = p.rigid_body_set.insert(rb);
-        p.collider_set
-            .insert_with_parent(collider, body_handle, &mut p.rigid_body_set);
-
-        let new = Component {
-            pos: vec2(world_x, world_y),
-            physics_handle: body_handle,
-            angle: 0.,
-            spec: specialization,
-        };
-
-        components.push(new);
-
-        // Joint if we are adding a sub-component
-        if components.len() != 1 {
-            let root_transform = p
-                .rigid_body_set
-                .get(components[0].physics_handle)
-                .unwrap()
-                .position();
-            let joint = FixedJointBuilder::new()
-                .local_anchor1(root_transform.inverse_transform_point(&point![world_x, world_y]))
-                .local_anchor2(point![0., 0.]);
-            // .local_anchor2(local_transform.inverse_transform_point(&point![
-            //     world_x,
-            //     world_y
-            // ]));
-
-            p.multibody_joint_set.insert(
-                components[0].physics_handle,
-                components[components.len() - 1].physics_handle,
-                joint,
-                true,
-            );
-        }
-    }
 }
 
 fn main() {
     let mut server = Server::new();
-    server.init_walls();
+    //server.init_walls();
     loop {
         server.update();
     }
