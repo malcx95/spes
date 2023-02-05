@@ -3,7 +3,7 @@ use ::rand::{thread_rng, Rng};
 use color_eyre::Result;
 use egui_macroquad::egui::emath::exponential_smooth_factor;
 use egui_macroquad::egui::{Color32, Rounding, Sense, Ui};
-use libplen::constants::WORLD_SIZE;
+use libplen::constants::{WORLD_SIZE, ASTEROID_SIZE};
 use libplen::gamestate::GameState;
 use libplen::messages::ClientMessage;
 use libplen::player::{ComponentSpecialization, Player};
@@ -161,6 +161,20 @@ impl ClientState {
                 );
 
                 Self::draw_bounds(self_pos.x, self_pos.y);
+
+                for asteroid in &game_state.asteroids {
+                    let (x, y) = (
+                        screen_width() / 2. - self_pos.x + asteroid.x,
+                        screen_height() / 2. - self_pos.y + asteroid.y,
+                    );
+                    rendering::draw_texture_centered_size(
+                        assets.malcolm,
+                        x,
+                        y,
+                        asteroid.angle,
+                        Vec2::new(ASTEROID_SIZE, ASTEROID_SIZE)
+                    );
+                }
 
                 for player in &game_state.players {
                     Self::draw_shield(player, self_pos.x, self_pos.y);

@@ -1,6 +1,9 @@
 use rapier2d::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 use crate::physics::PhysicsState;
+use crate::constants;
+use ::rand::{thread_rng, Rng};
+use ::rand::seq::SliceRandom;
 
 use crate::{math::Vec2, player::Player};
 
@@ -8,6 +11,7 @@ use crate::{math::Vec2, player::Player};
 pub struct GameState {
     pub players: Vec<Player>,
     pub bullets: Vec<Bullet>,
+    pub asteroids: Vec<Asteroid>,
     // put server side game state stuff here
 }
 
@@ -19,6 +23,51 @@ pub struct Bullet {
     pub angle: f32,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Asteroid {
+    pub handle: RigidBodyHandle,
+    pub x: f32,
+    pub y: f32,
+    pub angle: f32
+}
+
+const NUM_ASTEROIDS: usize = 40;
+const ASTEROID_MASS: f32 = 20000.;
+
+impl Asteroid {
+    pub fn new(p: &mut PhysicsState) -> Asteroid {
+        let mut rng = ::rand::thread_rng();
+        let x = rng.gen_range(0.0..constants::WORLD_SIZE);
+        let y = rng.gen_range(0.0..constants::WORLD_SIZE);
+
+        let vx = rng.gen_range(0.0..10.0);
+        let vy = rng.gen_range(0.0..10.0);
+
+        let pos = Vec2 {x, y};
+
+        let rb = RigidBodyBuilder::dynamic()
+            .translation(vector![x, y])
+            .build();
+
+        let collider = ColliderBuilder::ball(constants::ASTEROID_SIZE/2.)
+            .restitution(0.2)
+            .friction(0.5)
+            .mass(ASTEROID_MASS)
+            .build();
+
+        let body_handle = p.rigid_body_set.insert(rb);
+        p.collider_set
+            .insert_with_parent(collider, body_handle, &mut p.rigid_body_set);
+
+        Asteroid {
+            handle: body_handle,
+            x: x,
+            y: y,
+            angle: 0.,
+        }
+    }
+}
+
 impl Bullet {
 
     pub fn collides_with(self, x: f32, y: f32, radius: f32) -> bool {
@@ -28,10 +77,20 @@ impl Bullet {
 }
 
 impl GameState {
-    pub fn new() -> GameState {
+    pub fn new(op: Option<&mut PhysicsState>) -> GameState {
+        let mut asteroids = vec![];
+        match op {
+            None => {},
+            Some(p) => {
+                for _ in 0..NUM_ASTEROIDS {
+                    asteroids.push(Asteroid::new(p));
+                }
+            }
+        }
         GameState {
             players: Vec::new(),
             bullets: Vec::new(),
+            asteroids: asteroids,
             // init server side game state stuff here
         }
     }
@@ -59,6 +118,14 @@ impl GameState {
                 bullet.lifetime += delta;
                 i += 1;
             }
+        }
+        for asteroid in &mut self.asteroids {
+            let rb = p.rigid_body_set.get_mut(asteroid.handle).unwrap();
+            let pos = rb.position();
+            let angle = pos.rotation.angle();
+            asteroid.x = pos.translation.x;
+            asteroid.y = pos.translation.y;
+            asteroid.angle = angle;
         }
     }
 

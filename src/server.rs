@@ -78,14 +78,7 @@ impl Server {
         let impulse_joint_set = ImpulseJointSet::new();
         let multibody_joint_set = MultibodyJointSet::new();
         let ccd_solver = CCDSolver::new();
-
-        Self {
-            listener,
-            connections: vec![],
-            next_id: 0,
-            last_time: Instant::now(),
-            state: gamestate::GameState::new(),
-            p: PhysicsState {
+        let mut p = PhysicsState {
                 rigid_body_set,
                 collider_set,
                 physics_pipeline,
@@ -95,7 +88,15 @@ impl Server {
                 impulse_joint_set,
                 multibody_joint_set,
                 ccd_solver,
-            },
+            };
+
+        Self {
+            listener,
+            connections: vec![],
+            next_id: 0,
+            last_time: Instant::now(),
+            state: gamestate::GameState::new(Some(&mut p)),
+            p,
         }
     }
 
