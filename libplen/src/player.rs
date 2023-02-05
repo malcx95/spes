@@ -264,7 +264,7 @@ impl Player {
 
         let mut collider_builder = ColliderBuilder::ball(32.).restitution(0.2).friction(0.);
         if !self.components.is_empty() {
-            collider_builder = collider_builder.density(0.000001);
+            collider_builder = collider_builder.density(0.001);
         }
         let collider = collider_builder.build();
 
@@ -342,7 +342,9 @@ impl Player {
             rb.position().rotation * vector!(0., -self.input_y) * 1000_000.,
             true,
         );
-        rb.add_torque(self.input_x * 500_0000., true);
+
+        let bonus_torque = (self.components.len() * 15000) as f32;
+        rb.add_torque(self.input_x * 500_0000. + bonus_torque, true);
         // rb.apply_impulse_at_point(
         //     rb.position().rotation * vector!(0., -self.input_y) * 100_000.,
         //     rb.position().translation.vector.into(),
