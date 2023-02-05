@@ -222,6 +222,30 @@ impl Player {
                 constants::WORLD_SIZE / 2. + constants::MODULE_RADIUS * 2.,
             ),
         );
+        self.add_component(
+            ComponentSpecialization::Thrusters,
+            p,
+            (
+                constants::WORLD_SIZE / 2.,
+                constants::WORLD_SIZE / 2. + constants::MODULE_RADIUS * 4.,
+            ),
+        );
+        self.add_component(
+            ComponentSpecialization::Shield,
+            p,
+            (
+                constants::WORLD_SIZE / 2. + constants::MODULE_RADIUS * 2.,
+                constants::WORLD_SIZE / 2.,
+            ),
+        );
+        self.add_component(
+            ComponentSpecialization::Thrusters,
+            p,
+            (
+                constants::WORLD_SIZE / 2. - constants::MODULE_RADIUS * 2.,
+                constants::WORLD_SIZE / 2.,
+            ),
+        );
     }
 
     pub fn add_component(
