@@ -1,5 +1,6 @@
 use rapier2d::prelude::*;
 use serde_derive::{Deserialize, Serialize};
+use crate::physics::PhysicsState;
 
 use crate::{math::Vec2, player::Player};
 
@@ -16,6 +17,14 @@ pub struct Bullet {
     pub lifetime: f32,
     pub pos: Vec2,
     pub angle: f32,
+}
+
+impl Bullet {
+
+    pub fn collides_with(self, x: f32, y: f32, radius: f32) -> bool {
+        ((self.pos.x - x).powi(2) + (self.pos.y - y).powi(2)).sqrt() < radius
+    }
+
 }
 
 impl GameState {
@@ -35,9 +44,9 @@ impl GameState {
      *  vec with positions where lasers are fired
      *  )
      */
-    pub fn update(&mut self, rigid_body_set: &mut RigidBodySet, delta: f32) {
+    pub fn update(&mut self, delta: f32, p: &mut PhysicsState) {
         for player in &mut self.players {
-            player.update(rigid_body_set, delta, &mut self.bullets);
+            player.update(delta, &mut self.bullets, p);
         }
 
         let mut i: usize = 0;

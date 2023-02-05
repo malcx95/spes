@@ -238,8 +238,8 @@ impl ClientState {
 
         for v in &player.shield.points {
             let (x, y) = (
-                screen_width() / 2. - self_x + pos.x + v.x,
-                screen_height() / 2. - self_y + pos.y + v.y,
+                screen_width() / 2. - self_x + v.x,
+                screen_height() / 2. - self_y + v.y,
             );
 
             let alpha = if player.shielding { 1. } else { 0.1 };
@@ -250,7 +250,7 @@ impl ClientState {
                 a: alpha,
             };
 
-            draw_circle(x, y, 10., color);
+            draw_circle(x, y, constants::SHIELD_SEGMENT_RADIUS, color);
             println!("Draw {} {}", x, y);
         }
     }

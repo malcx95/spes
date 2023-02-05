@@ -3,6 +3,8 @@ use serde_derive::{Deserialize, Serialize};
 use crate::gamestate::Bullet;
 use crate::math::{vec2, Vec2};
 use crate::messages::ClientInput;
+use crate::physics::PhysicsState;
+use crate::constants;
 
 use rapier2d::prelude::*;
 use rapier2d::prelude::{RigidBodyHandle, RigidBodySet};
@@ -57,12 +59,13 @@ pub struct Player {
     pub is_building: bool,
 
     pub shield: Shield,
-    pub shielding: bool,
+    pub shielding: bool
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Shield {
-    pub points: Vec<Vec2>,
+    pub colliders: Vec<RigidBodyHandle>,
+    pub points: Vec<Point<Real>>,
     pub angle: f32,
     pub num_points: usize,
     pub radius: f32,
@@ -71,6 +74,7 @@ pub struct Shield {
 impl Shield {
     pub fn new() -> Shield {
         Shield {
+            colliders: vec![],
             points: vec![],
             angle: 0.,
             num_points: 0,
@@ -78,40 +82,57 @@ impl Shield {
         }
     }
 
-    fn init_points(&mut self) {
-        self.points = vec![];
-        for _ in 0..self.num_points {
-            self.points.push(Vec2 { x: 0., y: 0. });
-        }
-    }
-
-    pub fn set_num_points(&mut self, num_points: usize) {
-        self.num_points = num_points;
-        self.init_points();
-        self.update();
-    }
-
-    pub fn update_mouse(&mut self, aim_angle: f32) {
-        self.angle = aim_angle;
-
-        println!("Angle: {}", self.angle);
-        self.update();
-    }
-
-    fn update(&mut self) {
+    fn init_points(&mut self, p: &mut PhysicsState) {
         if self.num_points == 0 {
             return;
         }
+        self.points = vec![];
+        for rb in &self.colliders {
+            p.rigid_body_set.remove(*rb, &mut p.island_manager, &mut p.collider_set, &mut p.impulse_joint_set, &mut p.multibody_joint_set, true);
+        }
+        self.colliders = vec![];
+        for _ in 0..self.num_points {
+
+            let rb = RigidBodyBuilder::dynamic()
+                .build();
+
+            let collider = ColliderBuilder::ball(constants::SHIELD_SEGMENT_RADIUS)
+                .sensor(true)
+                .build();
+            let body_handle = p.rigid_body_set.insert(rb);
+            p.collider_set
+                .insert_with_parent(collider, body_handle, &mut p.rigid_body_set);
+
+            self.colliders.push(body_handle);
+            self.points.push(point!(0., 0.));
+        }
+    }
+
+    pub fn set_num_points(&mut self, num_points: usize, p: &mut PhysicsState, ppos: Vec2) {
+        self.num_points = num_points;
+        self.init_points(p);
+        self.update(p, ppos);
+    }
+
+    pub fn update_mouse(&mut self, aim_angle: f32, p: &mut PhysicsState, ppos: Vec2) {
+        self.angle = aim_angle;
+        self.update(p, ppos);
+    }
+
+    fn update(&mut self, p: &mut PhysicsState, ppos: Vec2) {
         let mut i = 0;
         for a in -((self.num_points / 2) as i32)..(self.num_points as i32 / 2) {
             let angle = self.angle + SHIELD_POINT_SPACING * (a as f32) / (self.num_points as f32);
-            let x = self.radius * angle.cos();
-            let y = self.radius * angle.sin();
+            let x = self.radius * angle.cos() + ppos.x;
+            let y = self.radius * angle.sin() + ppos.y;
+
+            let rb = p.rigid_body_set.get_mut(self.colliders[i]).unwrap();
+            rb.set_translation(vector!(x, y), true);
 
             self.points[i].x = x;
             self.points[i].y = y;
 
-            i += 1; // deal with it okay the chinese food is soon here
+            i += 1; // deal with it the sushi is soon here
         }
     }
 }
@@ -119,9 +140,6 @@ impl Shield {
 impl Player {
     pub fn new(id: u64, name: String, components: Vec<Component>) -> Player {
         let mut shield = Shield::new();
-        // TODO set according to shield modules
-        shield.set_num_points(20);
-
         Player {
             id,
             name,
@@ -158,15 +176,19 @@ impl Player {
         self.mouse_world_pos = i.mouse_world;
     }
 
-    pub fn shield_update(&mut self) {
-        self.shield.update_mouse(self.aim_angle);
+    pub fn set_num_shield_points(&mut self, num_points: usize, p: &mut PhysicsState) {
+        self.shield.set_num_points(num_points, p, self.position());
+    }
+
+    pub fn shield_update(&mut self, p: &mut PhysicsState) {
+        self.shield.update_mouse(self.aim_angle, p, self.position());
     }
 
     pub fn update(
         &mut self,
-        rigid_body_set: &mut RigidBodySet,
         delta: f32,
         bullets: &mut Vec<Bullet>,
+        p: &mut PhysicsState
     ) {
         let root_handle = self
             .components
@@ -174,7 +196,7 @@ impl Player {
             .expect("Player without a component")
             .physics_handle;
 
-        let rb = rigid_body_set
+        let rb = p.rigid_body_set
             .get_mut(root_handle)
             .expect(&format!("No rigid body for player {}", self.id));
 
@@ -193,9 +215,9 @@ impl Player {
 
         rb.apply_torque_impulse(self.input_x * 100_000., true);
 
-        self.update_components(rigid_body_set, bullets, delta);
+        self.update_components(&mut p.rigid_body_set, bullets, delta);
 
-        self.shield_update();
+        self.shield_update(p);
     }
 
     pub fn update_components(

@@ -15,6 +15,8 @@ use libplen::constants;
 use libplen::gamestate;
 use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage};
 use libplen::player::Player;
+use libplen::physics::PhysicsState;
+
 
 fn send_bytes(bytes: &[u8], stream: &mut TcpStream) -> io::Result<()> {
     let mut start = 0;
@@ -47,18 +49,6 @@ struct Client {
     id: u64,
     message_reader: MessageReader,
     input: ClientInput,
-}
-
-struct PhysicsState {
-    pub rigid_body_set: RigidBodySet,
-    pub collider_set: ColliderSet,
-    pub physics_pipeline: PhysicsPipeline,
-    pub island_manager: IslandManager,
-    pub broad_phase: BroadPhase,
-    pub narrow_phase: NarrowPhase,
-    pub impulse_joint_set: ImpulseJointSet,
-    pub multibody_joint_set: MultibodyJointSet,
-    pub ccd_solver: CCDSolver,
 }
 
 struct Server {
@@ -150,7 +140,7 @@ impl Server {
         }
         self.last_time = Instant::now();
 
-        self.state.update(&mut self.p.rigid_body_set, delta_time);
+        self.state.update(delta_time, &mut self.p);
 
         self.accept_new_connections();
         self.update_clients(delta_time);
@@ -289,7 +279,8 @@ impl Server {
                             &mut components,
                         );
 
-                        let player = Player::new(client.id, name, components);
+                        let mut player = Player::new(client.id, name, components);
+                        player.set_num_shield_points(20, p);
                         self.state.add_player(player);
                     }
                     Ok(ClientMessage::AddComponent {
@@ -324,16 +315,6 @@ impl Server {
                 }
             }
         }
-
-        // for (sound, pos) in &sounds_to_play {
-        //     for client in self.connections.iter_mut() {
-        //         let result = send_server_message(
-        //             &ServerMessage::PlaySound(*sound, *pos),
-        //             &mut client.message_reader.stream,
-        //         );
-        //         remove_player_on_disconnect!(result, client.id);
-        //     }
-        // }
 
         self.state
             .players
