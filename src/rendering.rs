@@ -22,6 +22,25 @@ pub fn draw_texture_centered(texture: texture::Texture2D, x: f32, y: f32, angle:
     )
 }
 
+pub fn draw_texture_centered_size(
+    texture: texture::Texture2D,
+    x: f32,
+    y: f32,
+    angle: f32,
+    size: Vec2,
+) {
+    let params = texture::DrawTextureParams {
+        dest_size: Some(size),
+        source: None,
+        rotation: angle,
+        flip_x: false,
+        flip_y: false,
+        pivot: None,
+    };
+
+    texture::draw_texture_ex(texture, x - size.x / 2., y - size.y / 2., WHITE, params);
+}
+
 /*
 pub fn draw_texture_pivot(texture: texture::Texture2D, x: f32, y: f32, angle: f32, pivot_x: f32, pivot_y: f32) {
     let params = texture::DrawTextureParams {

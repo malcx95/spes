@@ -25,6 +25,7 @@ pub struct Stars {
 
 pub struct Assets {
     pub malcolm: Texture2D,
+    pub root_node: Texture2D,
     pub cannon: Texture2D,
     pub stars: Stars,
     pub egui_textures: EguiTextures,
@@ -44,17 +45,20 @@ impl Stars {
     }
 }
 
+macro_rules! load_pixelart {
+    ($path:expr) => {{
+        let result = Texture2D::from_file_with_format(include_bytes!($path), None);
+        result.set_filter(macroquad::texture::FilterMode::Nearest);
+        result
+    }};
+}
+
 impl Assets {
     pub fn new() -> Result<Assets> {
         let assets = Assets {
-            malcolm: Texture2D::from_file_with_format(
-                include_bytes!("../resources/malcolm.png"),
-                None,
-            ),
-            cannon: Texture2D::from_file_with_format(
-                include_bytes!("../resources/cannon1.png"),
-                None,
-            ),
+            malcolm: load_pixelart!("../resources/malcolm.png"),
+            root_node: load_pixelart!("../resources/ship/root.png"),
+            cannon: load_pixelart!("../resources/cannon1.png"),
             stars: Stars::new(),
             egui_textures: EguiTextures {
                 cannon: RetainedImage::from_color_image(
@@ -62,10 +66,7 @@ impl Assets {
                     load_image_from_path(include_bytes!("../resources/cannon1.png"))?,
                 ),
             },
-            bullet: Texture2D::from_file_with_format(
-                include_bytes!("../resources/malcolm.png"),
-                None,
-            ),
+            bullet: load_pixelart!("../resources/malcolm.png"),
         };
         Ok(assets)
     }

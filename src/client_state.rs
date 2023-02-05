@@ -153,13 +153,19 @@ impl ClientState {
                     match spec {
                         CS::Root | CS::Shield | CS::Cannon { aim: false, .. } => {
                             let sprite = match spec {
-                                CS::Root => assets.malcolm,
+                                CS::Root => assets.root_node,
                                 CS::Shield => assets.stars.stars[0],
                                 CS::Cannon { .. } => assets.cannon,
                             };
                             draw_circle(x, y, 30.0, YELLOW);
 
-                            rendering::draw_texture_centered(sprite, x, y, component.angle);
+                            rendering::draw_texture_centered_size(
+                                sprite,
+                                x,
+                                y,
+                                component.angle,
+                                Vec2 { x: 64., y: 64. },
+                            );
                         }
                         CS::Cannon { aim: true, .. } => {
                             draw_circle(x, y, 30.0, GREEN);
