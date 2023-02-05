@@ -25,6 +25,17 @@ pub enum ComponentSpecialization {
     Cannon { cooldown: f32, aim: bool },
 }
 
+impl ComponentSpecialization {
+    // Returns the list of comopnents that can be added by the player
+    pub fn addable() -> Vec<ComponentSpecialization> {
+        vec![
+            ComponentSpecialization::Shield,
+            ComponentSpecialization::Cannon{cooldown: 0., aim: true},
+            ComponentSpecialization::Cannon{cooldown: 0., aim: false},
+        ]
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Player {
     pub id: u64,

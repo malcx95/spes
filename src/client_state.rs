@@ -1,4 +1,5 @@
-use ::rand::{random, Rng};
+use ::rand::seq::SliceRandom;
+use ::rand::{thread_rng, Rng};
 use color_eyre::Result;
 use egui_macroquad::egui::emath::exponential_smooth_factor;
 use libplen::gamestate::GameState;
@@ -90,10 +91,10 @@ impl ClientState {
 
                 client_messages.push(ClientMessage::AddComponent {
                     world_pos: mouse_world_pos,
-                    specialization: ComponentSpecialization::Cannon {
-                        cooldown: 0.,
-                        aim: random::<bool>(),
-                    },
+                    specialization: ComponentSpecialization::addable()
+                        .choose(&mut thread_rng())
+                        .unwrap()
+                        .clone(),
                 });
             }
         }
@@ -170,7 +171,7 @@ impl ClientState {
                         CS::Root | CS::Shield | CS::Cannon { aim: false, .. } => {
                             let fg_sprite = match spec {
                                 CS::Root => assets.root_node,
-                                CS::Shield => assets.stars.stars[0],
+                                CS::Shield => assets.shield,
                                 CS::Cannon { .. } => assets.cannon,
                             };
 

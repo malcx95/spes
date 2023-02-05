@@ -28,6 +28,7 @@ pub struct Assets {
     pub node_bg: Texture2D,
     pub root_node: Texture2D,
     pub cannon: Texture2D,
+    pub shield: Texture2D,
     pub stars: Stars,
     pub egui_textures: EguiTextures,
     pub bullet: Texture2D,
@@ -60,6 +61,7 @@ impl Assets {
             malcolm: load_pixelart!("../resources/malcolm.png"),
             node_bg: load_pixelart!("../resources/ship/base.png"),
             root_node: load_pixelart!("../resources/ship/root2.png"),
+            shield: load_pixelart!("../resources/ship/shield.png"),
             cannon: load_pixelart!("../resources/cannon1.png"),
             stars: Stars::new(),
             egui_textures: EguiTextures {
@@ -68,7 +70,7 @@ impl Assets {
                     load_image_from_path(include_bytes!("../resources/cannon1.png"))?,
                 ),
             },
-            bullet: load_pixelart!("../resources/malcolm.png"),
+            bullet: load_pixelart!("../resources/ship/laser.png"),
         };
         Ok(assets)
     }
