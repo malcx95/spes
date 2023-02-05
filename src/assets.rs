@@ -25,6 +25,7 @@ pub struct Stars {
 
 pub struct Assets {
     pub malcolm: Texture2D,
+    pub node_bg: Texture2D,
     pub root_node: Texture2D,
     pub cannon: Texture2D,
     pub stars: Stars,
@@ -57,7 +58,8 @@ impl Assets {
     pub fn new() -> Result<Assets> {
         let assets = Assets {
             malcolm: load_pixelart!("../resources/malcolm.png"),
-            root_node: load_pixelart!("../resources/ship/root.png"),
+            node_bg: load_pixelart!("../resources/ship/base.png"),
+            root_node: load_pixelart!("../resources/ship/root2.png"),
             cannon: load_pixelart!("../resources/cannon1.png"),
             stars: Stars::new(),
             egui_textures: EguiTextures {

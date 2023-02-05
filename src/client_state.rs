@@ -150,17 +150,32 @@ impl ClientState {
 
                     use ComponentSpecialization as CS;
                     let spec = &component.spec;
+
+                    let bg_sprite = match spec {
+                        CS::Cannon { .. } => Some(assets.node_bg),
+                        _ => None,
+                    };
+
+                    if let Some(s) = bg_sprite {
+                        rendering::draw_texture_centered_size(
+                            s,
+                            x,
+                            y,
+                            component.angle,
+                            Vec2 { x: 64., y: 64. },
+                        );
+                    }
+
                     match spec {
                         CS::Root | CS::Shield | CS::Cannon { aim: false, .. } => {
-                            let sprite = match spec {
+                            let fg_sprite = match spec {
                                 CS::Root => assets.root_node,
                                 CS::Shield => assets.stars.stars[0],
                                 CS::Cannon { .. } => assets.cannon,
                             };
-                            draw_circle(x, y, 30.0, YELLOW);
 
                             rendering::draw_texture_centered_size(
-                                sprite,
+                                fg_sprite,
                                 x,
                                 y,
                                 component.angle,
@@ -168,21 +183,16 @@ impl ClientState {
                             );
                         }
                         CS::Cannon { aim: true, .. } => {
-                            draw_circle(x, y, 30.0, GREEN);
                             let angle = player
                                 .mouse_world_pos
                                 .map(|p| (p - component.pos).atan2())
                                 .unwrap_or(0.0);
-                            let td = assets.cannon.get_texture_data();
-                            rendering::draw_texture_pivot_size(
+                            rendering::draw_texture_centered_size(
                                 assets.cannon,
-                                x - td.width() as f32 / 2.0,
-                                y - td.width() as f32 / 2.0,
-                                std::f32::consts::PI - angle,
                                 x,
                                 y,
-                                td.width() as f32,
-                                td.height() as f32,
+                                std::f32::consts::PI - angle,
+                                Vec2 { x: 64., y: 64. },
                             );
                         }
                     };
