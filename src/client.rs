@@ -6,7 +6,7 @@ use std::io::prelude::*;
 use std::net::TcpStream;
 use std::time::Instant;
 
-use color_eyre::Result;
+use anyhow::Result;
 use egui_macroquad::egui;
 use egui_macroquad::egui::Align;
 use egui_macroquad::egui::Layout;
@@ -110,8 +110,6 @@ impl MainState {
 
 #[macroquad::main("BasicShapes")]
 async fn main() -> Result<()> {
-    color_eyre::install()?;
-
     let host = std::env::var("SERVER").unwrap_or(String::from("localhost:4444"));
     let stream = TcpStream::connect(host).expect("Could not connect to server");
     println!("Connected to server");
@@ -139,7 +137,7 @@ async fn main() -> Result<()> {
 
     let mut main_state = MainState::new(my_id);
 
-    let name = whoami::username();
+    let name = String::new();
 
     loop {
         send_client_message(&ClientMessage::JoinGame { name }, &mut reader.stream);

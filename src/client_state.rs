@@ -1,11 +1,11 @@
 use std::f32::consts::PI;
 
-use ::rand::Rng;
-use color_eyre::Result;
+use anyhow::Result;
 use egui_macroquad::egui::emath::exponential_smooth_factor;
 use libplen::constants;
 use libplen::gamestate::GameState;
 use macroquad::prelude::*;
+use macroquad::rand::gen_range;
 
 use crate::assets::Assets;
 
@@ -52,15 +52,13 @@ impl ClientState {
 
     fn init_stars() -> Vec<Star> {
         let mut stars = vec![];
-        let mut rng = ::rand::thread_rng();
         for _ in 0..constants::NUM_STARS {
-            let x = rng.gen_range((-constants::WORLD_SIZE)..(2. * constants::WORLD_SIZE));
-            let y = rng.gen_range((-constants::WORLD_SIZE)..(2. * constants::WORLD_SIZE));
-            let i = rng.gen_range(0..2);
+            let x = gen_range(-constants::WORLD_SIZE as i32, 2 * constants::WORLD_SIZE as i32);
+            let y = gen_range(-constants::WORLD_SIZE, 2. * constants::WORLD_SIZE);
             stars.push(Star {
-                x,
-                y,
-                star_index: i,
+                x: x as f32,
+                y: y as f32,
+                star_index: gen_range(0, 2),
             });
         }
         stars
@@ -75,7 +73,7 @@ impl ClientState {
 
         let player = game_state.players.iter().find(|p| p.id == my_id);
         if let Some(p) = player {
-            if whoami::hostname() == "ares" || whoami::hostname() == "spirit" {
+            if false {
                 Self::draw_background(self, p.position().x, p.position().y, p.velocity());
             } else {
                 Self::draw_background2(self, assets, p.position().x, p.position().y);

@@ -9,7 +9,7 @@ pub struct Vec2 {
 
 impl Vec2 {
     pub fn to_mq(&self) -> macroquad::math::Vec2 {
-        macroquad::math::Vec2 {x: self.x, y: self.y}
+        macroquad::math::Vec2::new(self.x, self.y)
     }
 }
 

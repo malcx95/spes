@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use color_eyre::Result;
+use anyhow::Result;
 use egui_extras::image::RetainedImage;
 use egui_macroquad::egui::{self};
 
@@ -52,7 +52,7 @@ impl Assets {
             egui_textures: EguiTextures {
                 cannon: RetainedImage::from_color_image(
                     "egui",
-                    load_image_from_path(include_bytes!("../resources/cannon1.png"))?,
+                    load_image_from_path(include_bytes!("../resources/cannon1.png")).unwrap(),
                 ),
             },
         };
