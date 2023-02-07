@@ -1,58 +1,30 @@
-use std::io;
-use std::io::prelude::*;
-use std::net::TcpListener;
-use std::net::TcpStream;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use std::vec;
 
-use libplen::math::vec2;
-use libplen::player::Component;
 use libplen::player::ComponentSpecialization;
 use rapier2d::prelude::*;
+use quad_net::quad_socket::server::SocketHandle;
 use unicode_truncate::UnicodeTruncateStr;
 
 use libplen::constants;
 use libplen::gamestate;
-use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage};
+use libplen::math::{vec2, Vec2};
+use libplen::messages::{ClientInput, ClientMessage, ServerMessage};
 use libplen::physics::PhysicsState;
 use libplen::player::Player;
 
-fn send_bytes(bytes: &[u8], stream: &mut TcpStream) -> io::Result<()> {
-    let mut start = 0;
-    loop {
-        match stream.write(&bytes[start..bytes.len()]) {
-            Ok(n) => {
-                if n < bytes.len() - start {
-                    start = start + n;
-                } else {
-                    break Ok(());
-                }
-            }
-            Err(e) => match e.kind() {
-                io::ErrorKind::WouldBlock => continue,
-                io::ErrorKind::Interrupted => continue,
-                _ => return Err(e),
-            },
-        }
-    }
-}
-
-fn send_server_message(msg: &ServerMessage, stream: &mut TcpStream) -> io::Result<()> {
+fn send_server_message<'a>(msg: &ServerMessage, handle: &mut SocketHandle<'a>) -> Result<(), ()> {
     let data = bincode::serialize(msg).expect("Failed to encode message");
-    let length = data.len() as u16;
-    send_bytes(&length.to_be_bytes(), stream)?;
-    send_bytes(&data, stream)
+    handle.send(&data)
 }
 
+#[derive(Default)]
 struct Client {
-    id: u64,
-    message_reader: MessageReader,
+    id: Option<u64>,
     input: ClientInput,
 }
 
 struct Server {
-    listener: TcpListener,
-    connections: Vec<Client>,
     state: gamestate::GameState,
     next_id: u64,
     last_time: Instant,
@@ -61,12 +33,6 @@ struct Server {
 
 impl Server {
     pub fn new() -> Self {
-        let listener = TcpListener::bind("0.0.0.0:4444").unwrap();
-
-        listener.set_nonblocking(true).unwrap();
-
-        println!("Listening on 0.0.0.0:4444");
-
         let rigid_body_set = RigidBodySet::new();
         let collider_set = ColliderSet::new();
 
@@ -91,8 +57,6 @@ impl Server {
         };
 
         Self {
-            listener,
-            connections: vec![],
             next_id: 0,
             last_time: Instant::now(),
             state: gamestate::GameState::new(Some(&mut p)),
@@ -131,19 +95,20 @@ impl Server {
         }
     }
 
-    pub fn update(&mut self) {
-        let elapsed = self.last_time.elapsed();
-        let delta_time = constants::DELTA_TIME;
-        let dt_duration = std::time::Duration::from_millis(constants::SERVER_SLEEP_DURATION);
-        if elapsed < dt_duration {
-            std::thread::sleep(dt_duration - elapsed);
+    pub fn add_component(&mut self, world_pos: Vec2, specialization: ComponentSpecialization, client_id: u64) {
+        for player in self.state.players.iter_mut() {
+            if player.id == client_id {
+                player.add_component(
+                    specialization.clone(),
+                    &mut self.p,
+                    (world_pos.x, world_pos.y),
+                )
+            }
         }
-        self.last_time = Instant::now();
+    }
 
-        self.state.update(delta_time, &mut self.p);
-
-        self.accept_new_connections();
-        self.update_clients(delta_time);
+    pub fn update(&mut self) {
+        self.state.update(constants::DELTA_TIME, &mut self.p);
 
         self.p.physics_pipeline.step(
             &vector![0., 0.],
@@ -188,125 +153,100 @@ impl Server {
             bullet.angle = pos.rotation.angle();
         }
     }
-
-    fn accept_new_connections(&mut self) {
-        // Read data from clients
-        for stream in self.listener.incoming() {
-            match stream {
-                Ok(mut stream) => {
-                    stream.set_nonblocking(true).unwrap();
-                    println!("Got new connection {}", self.next_id);
-                    if let Err(_) =
-                        send_server_message(&ServerMessage::AssignId(self.next_id), &mut stream)
-                    {
-                        println!("Could not send assign id message");
-                        continue;
-                    }
-                    println!("Sent id {}", self.next_id);
-                    self.connections.push(Client {
-                        id: self.next_id,
-                        message_reader: MessageReader::new(stream),
-                        input: ClientInput::new(),
-                    });
-                    self.next_id += 1;
-                }
-                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                    // wait until network socket is ready, typically implemented
-                    // via platform-specific APIs such as epoll or IOCP
-                    break;
-                }
-                e => {
-                    e.expect("Socket listener error");
-                }
-            }
-        }
-    }
-
-    fn update_clients(&mut self, _delta_time: f32) {
-        // Send data to clients
-        let mut clients_to_delete = vec![];
-        // let mut sounds_to_play = vec![];
-
-        macro_rules! remove_player_on_disconnect {
-            ($op:expr, $id:expr) => {
-                match $op {
-                    Ok(_) => {}
-                    Err(e) => match e.kind() {
-                        io::ErrorKind::ConnectionReset | io::ErrorKind::BrokenPipe => {
-                            println!("Player {} disconnected", $id);
-                            clients_to_delete.push($id);
-                            break;
-                        }
-                        e => panic!("Unhandled network issue: {:?}", e),
-                    },
-                };
-            };
-        }
-
-        let p = &mut self.p;
-        for client in self.connections.iter_mut() {
-            remove_player_on_disconnect!(client.message_reader.fetch_bytes(), client.id);
-
-            for message in client.message_reader.iter() {
-                match bincode::deserialize(&message) {
-                    Ok(ClientMessage::Input(input)) => {
-                        client.input = input;
-                    }
-                    Ok(ClientMessage::JoinGame { mut name }) => {
-                        if name.trim().len() != 0 {
-                            name = name.trim().unicode_truncate(20).0.to_string()
-                        } else {
-                            name = "Mr Whitespace".into();
-                        }
-
-                        let mut player = Player::new(client.id, name, p);
-                        player.set_num_shield_points(20, p);
-                        self.state.add_player(player);
-                    }
-                    Ok(ClientMessage::AddComponent {
-                        world_pos,
-                        specialization,
-                    }) => {
-                        for player in self.state.players.iter_mut().filter(|p| p.id == client.id) {
-                            player.add_component(
-                                specialization.clone(),
-                                p,
-                                (world_pos.x, world_pos.y),
-                            )
-                        }
-                    }
-                    Err(_) => {
-                        println!("Could not decode message from {}, deleting", client.id);
-                        clients_to_delete.push(client.id);
-                    }
-                }
-            }
-
-            let result = send_server_message(
-                &ServerMessage::GameState(self.state.clone()),
-                &mut client.message_reader.stream,
-            );
-            remove_player_on_disconnect!(result, client.id);
-
-            for player in &mut self.state.players {
-                if player.id == client.id {
-                    player.set_input(&client.input);
-                }
-            }
-        }
-
-        self.state
-            .players
-            .retain(|player| !clients_to_delete.contains(&player.id));
-        self.connections
-            .retain(|client| !clients_to_delete.contains(&client.id));
-    }
 }
 
 fn main() {
-    let mut server = Server::new();
+    let tcp_addr = "0.0.0.0:4444";
+    let ws_addr = "0.0.0.0:4445";
+
+    println!("TCP Listening on {}", tcp_addr);
+    println!("WebSocket Listening on {}", ws_addr);
+
+    let dt_duration = std::time::Duration::from_secs_f32(constants::DELTA_TIME);
+
+    let server = Arc::new(Mutex::new(Server::new()));
     //server.init_walls();
-    loop {
-        server.update();
-    }
+    quad_net::quad_socket::server::listen(
+        tcp_addr, ws_addr,
+        quad_net::quad_socket::server::Settings {
+            on_message: {
+                let server = server.clone();
+                move |out, mut client: &mut Client, msg| {
+                    let mut server = server.lock().unwrap();
+
+                    if client.id.is_none() {
+                        println!("Got new connection {}", server.next_id);
+                        if let Err(_) =
+                            send_server_message(&ServerMessage::AssignId(server.next_id), out)
+                        {
+                            println!("Could not send assign id message");
+                            out.disconnect();
+                            return;
+                        }
+                        println!("Sent id {}", server.next_id);
+                        client.id = Some(server.next_id);
+                        server.next_id += 1;
+                    }
+
+                    let client_id = client.id.unwrap();
+
+                    match bincode::deserialize(&msg) {
+                        Ok(ClientMessage::Input(input)) => {
+                            client.input = input;
+                        }
+                        Ok(ClientMessage::JoinGame { mut name }) => {
+                            if name.trim().len() != 0 {
+                                name = name.trim().unicode_truncate(20).0.to_string()
+                            } else {
+                                name = "Mr Whitespace".into();
+                            }
+
+                            let mut player = Player::new(client_id, name, &mut server.p);
+                            player.set_num_shield_points(20, &mut server.p);
+                            server.state.add_player(player);
+                        }
+                        Ok(ClientMessage::AddComponent {
+                            world_pos,
+                            specialization,
+                        }) => {
+                            server.add_component(world_pos, specialization, client_id);
+                        }
+                        Err(_) => {
+                            println!("Could not decode message from {}, deleting", client_id);
+                            out.disconnect();
+                        }
+                    }
+                }
+            },
+            on_timer: {
+                let server = server.clone();
+                move |out, client| {
+                    let mut server = server.lock().unwrap();
+                    if server.last_time.elapsed() > dt_duration {
+                        server.update();
+                        server.last_time = Instant::now();
+                    }
+
+                    if let Err(_) = send_server_message(&ServerMessage::GameState(server.state.clone()), out) {
+                        println!("Could not send state to {:?}", client.id);
+                        out.disconnect();
+                    }
+                }
+            },
+            on_disconnect: {
+                let server = server.clone();
+                move |client| {
+                    if let Some(id) = client.id {
+                        println!("Player {} disconnected", id);
+                       let mut server = server.lock().unwrap();
+                        server.state
+                            .players
+                            .retain(|player| player.id != id);
+                    }
+                }
+            },
+            timer: Some(dt_duration),
+            _marker: std::marker::PhantomData,
+        }
+    );
 }

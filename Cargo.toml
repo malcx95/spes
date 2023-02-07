@@ -17,6 +17,7 @@ image = {version="0.24.5", default-features=false, features=["png"]}
 egui_extras = "0.19"
 anyhow = {version="1.0.68", default-features=false}
 rapier2d = {version="0.17.1", features=["simd-stable"]}
+quad-net = "0.1.1"
 
 [[bin]]
 name = "server"

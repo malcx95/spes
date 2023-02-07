@@ -2,31 +2,23 @@ mod assets;
 mod client_state;
 mod rendering;
 
-use std::io::prelude::*;
-use std::net::TcpStream;
 use std::time::Instant;
 
 use anyhow::Result;
 use client_state::ClientState;
 use egui::{Align, Layout, Sense};
 use egui_macroquad::egui::{self, Color32, Painter, Rounding, Stroke, Ui};
+use macroquad::prelude::*;
+use quad_net::quad_socket::client::QuadSocket;
 
 use assets::Assets;
 use libplen::constants::WORLD_SIZE;
 use libplen::gamestate;
-use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage};
+use libplen::messages::{ClientInput, ClientMessage, ServerMessage};
 
-use macroquad::prelude::*;
-
-fn send_client_message(msg: &ClientMessage, stream: &mut TcpStream) {
+fn send_client_message<'a>(msg: &ClientMessage, socket: &mut QuadSocket) {
     let data = bincode::serialize(msg).expect("Failed to encode message");
-    let length = data.len() as u16;
-    stream
-        .write(&length.to_be_bytes())
-        .expect("Failed to send message length to server");
-    stream
-        .write(&data)
-        .expect("Failed to send message to server");
+    socket.send(&data);
 }
 
 #[allow(unused)]
@@ -105,19 +97,13 @@ impl MainState {
 
     fn update(
         &mut self,
-        server_reader: &mut MessageReader,
+        socket: &mut QuadSocket,
         extra_messages: &mut Vec<ClientMessage>,
     ) -> StateResult {
         let elapsed = self.last_time.elapsed();
         self.last_time = Instant::now();
-        let dt_duration = std::time::Duration::from_millis(1000 / 60);
-        if elapsed < dt_duration {
-            std::thread::sleep(dt_duration - elapsed);
-        }
 
-        server_reader.fetch_bytes().unwrap();
-
-        for message in server_reader.iter() {
+        while let Some(message) = socket.try_recv() {
             match bincode::deserialize(&message).unwrap() {
                 ServerMessage::AssignId(_) => panic!("Got new ID after intialisation"),
                 ServerMessage::GameState(state) => self.game_state = state,
@@ -134,7 +120,7 @@ impl MainState {
         );
 
         let input_message = ClientMessage::Input(input);
-        send_client_message(&input_message, &mut server_reader.stream);
+        send_client_message(&input_message, socket);
 
         StateResult::Continue
     }
@@ -225,19 +211,28 @@ impl MainState {
 
 #[macroquad::main("BasicShapes")]
 async fn main() -> Result<()> {
-    let host = std::env::var("SERVER").unwrap_or(String::from("localhost:4444"));
-    let stream = TcpStream::connect(host).expect("Could not connect to server");
+    #[cfg(not(target_arch = "wasm32"))]
+    let mut socket = QuadSocket::connect(&std::env::var("SERVER").unwrap_or(String::from("localhost:4445"))).expect("Could not connect to server");
+    #[cfg(target_arch = "wasm32")]
+    let mut socket = QuadSocket::connect("ws://localhost:4445").unwrap();
+    #[cfg(target_arch = "wasm32")]
+    {
+        while !socket.is_wasm_websocket_connected() {
+            next_frame().await;
+        }
+    }
     println!("Connected to server");
 
-    stream
-        .set_nonblocking(true)
-        .expect("Could not set socket as nonblocking");
-    let mut reader = MessageReader::new(stream);
+    // TODO: replace server loop to allow immediate message
+    let input_message = ClientMessage::Input(Default::default());
+    send_client_message(&input_message, &mut socket);
 
     let msg = loop {
-        reader.fetch_bytes().unwrap();
-        if let Some(msg) = reader.iter().next() {
-            break bincode::deserialize(&msg).unwrap();
+        if let Some(msg) = socket.try_recv() {
+            if msg.len() > 0 {
+                break bincode::deserialize(&msg).unwrap();
+            }
+            next_frame().await;
         }
     };
 
@@ -255,12 +250,12 @@ async fn main() -> Result<()> {
     let name = String::new();
 
     loop {
-        send_client_message(&ClientMessage::JoinGame { name }, &mut reader.stream);
+        send_client_message(&ClientMessage::JoinGame { name }, &mut socket);
 
         // let main_state = &mut MainState::new(my_id);
         loop {
             let mut client_messages = vec![];
-            main_state.update(&mut reader, &mut client_messages);
+            main_state.update(&mut socket, &mut client_messages);
 
             main_state.draw(&mut assets)?;
 
@@ -327,8 +322,10 @@ async fn main() -> Result<()> {
             next_frame().await;
 
             while let Some(msg) = client_messages.pop() {
-                send_client_message(&msg, &mut reader.stream);
+                send_client_message(&msg, &mut socket);
             }
+
+            next_frame().await
         }
     }
 }
