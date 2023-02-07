@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use egui_extras::image::RetainedImage;
-use egui_macroquad::egui::{self};
+use egui_macroquad::egui;
 
 use macroquad::texture::*;
 
@@ -21,16 +21,24 @@ pub struct EguiTextures {
     pub cannon: RetainedImage,
 }
 
-
 pub struct Stars {
-    pub stars: Vec<Texture2D>
+    pub stars: Vec<Texture2D>,
 }
-
 
 pub struct Assets {
     pub malcolm: Texture2D,
+    pub node_bg: Texture2D,
+    pub root_node: Texture2D,
+    pub cannon: Texture2D,
+    pub thrusters: Texture2D,
+    pub thrust_flame: Texture2D,
+    pub shield: Texture2D,
     pub stars: Stars,
     pub egui_textures: EguiTextures,
+    pub bullet: Texture2D,
+    pub reaction_wheel_bot: Texture2D,
+    pub reaction_wheel_mid: Texture2D,
+    pub reaction_wheel_top: Texture2D,
 }
 
 impl Stars {
@@ -39,15 +47,30 @@ impl Stars {
             Texture2D::from_file_with_format(include_bytes!("../resources/star1.png"), None),
             Texture2D::from_file_with_format(include_bytes!("../resources/star2.png"), None),
             Texture2D::from_file_with_format(include_bytes!("../resources/star3.png"), None),
+            //FIXME(frans): Star4
+            Texture2D::from_file_with_format(include_bytes!("../resources/star3.png"), None),
         ];
         Stars { stars }
     }
 }
 
+macro_rules! load_pixelart {
+    ($path:expr) => {{
+        let result = Texture2D::from_file_with_format(include_bytes!($path), None);
+        result.set_filter(macroquad::texture::FilterMode::Nearest);
+        result
+    }};
+}
+
 impl Assets {
     pub fn new() -> Result<Assets> {
         let assets = Assets {
-            malcolm: Texture2D::from_file_with_format(include_bytes!("../resources/malcolm.png"), None),
+            malcolm: load_pixelart!("../resources/malcolm.png"),
+            node_bg: load_pixelart!("../resources/ship/base.png"),
+            root_node: load_pixelart!("../resources/ship/root2.png"),
+            shield: load_pixelart!("../resources/ship/shield.png"),
+            cannon: load_pixelart!("../resources/cannon1.png"),
+            thrust_flame: load_pixelart!("../resources/ship/thruster.png"),
             stars: Stars::new(),
             egui_textures: EguiTextures {
                 cannon: RetainedImage::from_color_image(
@@ -55,6 +78,11 @@ impl Assets {
                     load_image_from_path(include_bytes!("../resources/cannon1.png")).unwrap(),
                 ),
             },
+            bullet: load_pixelart!("../resources/ship/laser.png"),
+            thrusters: load_pixelart!("../resources/ship/thrusters.png"),
+            reaction_wheel_bot: load_pixelart!("../resources/ship/reaction_wheel_bottom.png"),
+            reaction_wheel_mid: load_pixelart!("../resources/ship/reaction_wheel_wheel.png"),
+            reaction_wheel_top: load_pixelart!("../resources/ship/reaction_wheel_top.png"),
         };
         Ok(assets)
     }

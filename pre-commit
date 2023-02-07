@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 SOURCE_DIRS=(src)
 
@@ -13,7 +13,7 @@ function check_untracked_srcs {(
 function run_tests {(
     cargo test && \
     # Remember to add && \ when adding more tests
-    cargo +stable fmt -- --check && \
+    cargo fmt -- --check && \
     true
 )}
 

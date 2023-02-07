@@ -7,12 +7,14 @@ use std::vec;
 
 use libplen::math::vec2;
 use libplen::player::Component;
+use libplen::player::ComponentSpecialization;
 use rapier2d::prelude::*;
 use unicode_truncate::UnicodeTruncateStr;
 
 use libplen::constants;
 use libplen::gamestate;
 use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage};
+use libplen::physics::PhysicsState;
 use libplen::player::Player;
 
 fn send_bytes(bytes: &[u8], stream: &mut TcpStream) -> io::Result<()> {
@@ -48,18 +50,6 @@ struct Client {
     input: ClientInput,
 }
 
-struct PhysicsState {
-    pub rigid_body_set: RigidBodySet,
-    pub collider_set: ColliderSet,
-    pub physics_pipeline: PhysicsPipeline,
-    pub island_manager: IslandManager,
-    pub broad_phase: BroadPhase,
-    pub narrow_phase: NarrowPhase,
-    pub impulse_joint_set: ImpulseJointSet,
-    pub multibody_joint_set: MultibodyJointSet,
-    pub ccd_solver: CCDSolver,
-}
-
 struct Server {
     listener: TcpListener,
     connections: Vec<Client>,
@@ -88,24 +78,56 @@ impl Server {
         let impulse_joint_set = ImpulseJointSet::new();
         let multibody_joint_set = MultibodyJointSet::new();
         let ccd_solver = CCDSolver::new();
+        let mut p = PhysicsState {
+            rigid_body_set,
+            collider_set,
+            physics_pipeline,
+            island_manager,
+            broad_phase,
+            narrow_phase,
+            impulse_joint_set,
+            multibody_joint_set,
+            ccd_solver,
+        };
 
         Self {
             listener,
             connections: vec![],
             next_id: 0,
             last_time: Instant::now(),
-            state: gamestate::GameState::new(),
-            p: PhysicsState {
-                rigid_body_set,
-                collider_set,
-                physics_pipeline,
-                island_manager,
-                broad_phase,
-                narrow_phase,
-                impulse_joint_set,
-                multibody_joint_set,
-                ccd_solver,
-            },
+            state: gamestate::GameState::new(Some(&mut p)),
+            p,
+        }
+    }
+
+    pub fn init_walls(&mut self) {
+        for x in -1..2 {
+            for y in -1..2 {
+                if x == 0 && y == 0 {
+                    continue;
+                }
+
+                let dx = x as f32;
+                let dy = y as f32;
+
+                let rb = RigidBodyBuilder::dynamic().build();
+
+                let collider =
+                    ColliderBuilder::cuboid(constants::WORLD_SIZE / 2., constants::WORLD_SIZE / 2.)
+                        .mass(0.0)
+                        .translation(vector![
+                            dx * constants::WORLD_SIZE + constants::WORLD_SIZE / 2.,
+                            dy * constants::WORLD_SIZE + constants::WORLD_SIZE / 2.
+                        ])
+                        .build();
+
+                let body_handle = self.p.rigid_body_set.insert(rb);
+                self.p.collider_set.insert_with_parent(
+                    collider,
+                    body_handle,
+                    &mut self.p.rigid_body_set,
+                );
+            }
         }
     }
 
@@ -118,7 +140,7 @@ impl Server {
         }
         self.last_time = Instant::now();
 
-        self.state.update(&mut self.p.rigid_body_set, delta_time);
+        self.state.update(delta_time, &mut self.p);
 
         self.accept_new_connections();
         self.update_clients(delta_time);
@@ -154,8 +176,16 @@ impl Server {
 
                 component.pos = vec2(trans.x, trans.y);
                 component.angle = rot.angle();
-
             }
+        }
+
+        for bullet in &mut self.state.bullets {
+            let rb = self.p.rigid_body_set.get(bullet.handle).unwrap();
+            let pos = rb.position();
+            let trans = pos.translation;
+
+            bullet.pos = vec2(trans.x, trans.y);
+            bullet.angle = pos.rotation.angle();
         }
     }
 
@@ -213,6 +243,7 @@ impl Server {
             };
         }
 
+        let p = &mut self.p;
         for client in self.connections.iter_mut() {
             remove_player_on_disconnect!(client.message_reader.fetch_bytes(), client.id);
 
@@ -228,33 +259,21 @@ impl Server {
                             name = "Mr Whitespace".into();
                         }
 
-                        let p = &mut self.p;
-                        let components = [(0., 0.), (200., 200.)]
-                            .into_iter()
-                            .map(|(x, y)| {
-                                let rb = RigidBodyBuilder::dynamic()
-                                    // .translation(vector![x, y])
-                                    .build();
-
-                                let collider = ColliderBuilder::ball(64.).restitution(1.0).build();
-
-                                let body_handle = p.rigid_body_set.insert(rb);
-                                p.collider_set.insert_with_parent(
-                                    collider,
-                                    body_handle,
-                                    &mut p.rigid_body_set,
-                                );
-
-                                Component {
-                                    pos: vec2(x, y),
-                                    physics_handle: body_handle,
-                                    angle: 0.
-                                }
-                            })
-                            .collect();
-
-                        let player = Player::new(client.id, name, components);
+                        let mut player = Player::new(client.id, name, p);
+                        player.set_num_shield_points(20, p);
                         self.state.add_player(player);
+                    }
+                    Ok(ClientMessage::AddComponent {
+                        world_pos,
+                        specialization,
+                    }) => {
+                        for player in self.state.players.iter_mut().filter(|p| p.id == client.id) {
+                            player.add_component(
+                                specialization.clone(),
+                                p,
+                                (world_pos.x, world_pos.y),
+                            )
+                        }
                     }
                     Err(_) => {
                         println!("Could not decode message from {}, deleting", client.id);
@@ -271,20 +290,10 @@ impl Server {
 
             for player in &mut self.state.players {
                 if player.id == client.id {
-                    player.set_input(client.input.x_input, client.input.y_input);
+                    player.set_input(&client.input);
                 }
             }
         }
-
-        // for (sound, pos) in &sounds_to_play {
-        //     for client in self.connections.iter_mut() {
-        //         let result = send_server_message(
-        //             &ServerMessage::PlaySound(*sound, *pos),
-        //             &mut client.message_reader.stream,
-        //         );
-        //         remove_player_on_disconnect!(result, client.id);
-        //     }
-        // }
 
         self.state
             .players
@@ -296,6 +305,7 @@ impl Server {
 
 fn main() {
     let mut server = Server::new();
+    //server.init_walls();
     loop {
         server.update();
     }

@@ -19,3 +19,5 @@
 /msvc
 
 .direnv/
+
+resources/*autosave.kra

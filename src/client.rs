@@ -7,11 +7,12 @@ use std::net::TcpStream;
 use std::time::Instant;
 
 use anyhow::Result;
-use egui_macroquad::egui;
-use egui_macroquad::egui::Align;
-use egui_macroquad::egui::Layout;
+use client_state::ClientState;
+use egui::{Align, Layout, Sense};
+use egui_macroquad::egui::{self, Color32, Painter, Rounding, Stroke, Ui};
 
 use assets::Assets;
+use libplen::constants::WORLD_SIZE;
 use libplen::gamestate;
 use libplen::messages::{ClientInput, ClientMessage, MessageReader, ServerMessage};
 
@@ -46,13 +47,13 @@ impl MainState {
     fn new(my_id: u64) -> MainState {
         MainState {
             my_id,
-            game_state: gamestate::GameState::new(),
+            game_state: gamestate::GameState::new(None),
             client_state: client_state::ClientState::new(my_id),
             last_time: Instant::now(),
         }
     }
 
-    fn read_input() -> ClientInput {
+    fn read_input(&self) -> ClientInput {
         let mut x_input = 0.0;
         let mut y_input = 0.0;
 
@@ -69,10 +70,44 @@ impl MainState {
             x_input += 1.0;
         }
 
-        ClientInput { x_input, y_input }
+        let mouse_left = is_mouse_button_down(MouseButton::Left);
+        let mouse_right = is_mouse_button_down(MouseButton::Right);
+
+        let (mouse_x, mouse_y) = mouse_position();
+
+        let shoot = is_key_down(KeyCode::Space);
+        let (nmx, nmy) = (
+            mouse_x - screen_width() / 2.,
+            mouse_y - screen_height() / 2.,
+        );
+        let aim_angle = nmy.atan2(nmx);
+
+        let shielding = mouse_right && !self.client_state.is_building;
+
+        let mouse_world = self
+            .client_state
+            .my_player(self.client_state.my_id, &self.game_state)
+            .map(|p| ClientState::mouse_world_pos(p));
+
+        ClientInput {
+            x_input,
+            y_input,
+            mouse_x,
+            mouse_y,
+            mouse_world,
+            shoot,
+            mouse_left,
+            mouse_right,
+            shielding,
+            aim_angle,
+        }
     }
 
-    fn update(&mut self, server_reader: &mut MessageReader) -> StateResult {
+    fn update(
+        &mut self,
+        server_reader: &mut MessageReader,
+        extra_messages: &mut Vec<ClientMessage>,
+    ) -> StateResult {
         let elapsed = self.last_time.elapsed();
         self.last_time = Instant::now();
         let dt_duration = std::time::Duration::from_millis(1000 / 60);
@@ -89,10 +124,14 @@ impl MainState {
             }
         }
 
-        let input = Self::read_input();
+        let input = self.read_input();
 
-        self.client_state
-            .update(elapsed.as_secs_f32(), &mut self.game_state, self.my_id);
+        self.client_state.update(
+            elapsed.as_secs_f32(),
+            &mut self.game_state,
+            self.my_id,
+            extra_messages,
+        );
 
         let input_message = ClientMessage::Input(input);
         send_client_message(&input_message, &mut server_reader.stream);
@@ -105,6 +144,82 @@ impl MainState {
             .draw(self.my_id, &self.game_state, assets)?;
 
         Ok(())
+    }
+}
+
+/// Minimap
+impl MainState {
+    fn draw_minimap_player(
+        &self,
+        painter: &mut Painter,
+        inner: &egui_macroquad::egui::Rect,
+        x: f32,
+        y: f32,
+        color: Color32,
+    ) {
+        let px = inner.min.x + (inner.width() * (x / WORLD_SIZE));
+        let py = inner.min.y + (inner.height() * (y / WORLD_SIZE));
+        painter.rect_filled(
+            egui_macroquad::egui::Rect::from_center_size((px, py).into(), (3., 3.).into()),
+            Rounding::none(),
+            color,
+        );
+    }
+
+    fn draw_minimap_me(&self, painter: &mut Painter, inner: &egui_macroquad::egui::Rect) {
+        let Some(player) = self
+            .client_state
+            .my_player(self.my_id, &self.game_state) else { return; };
+        for component in &player.components {
+            self.draw_minimap_player(
+                painter,
+                inner,
+                component.pos.x,
+                component.pos.y,
+                Color32::RED,
+            );
+        }
+    }
+
+    fn draw_minimap_asteroids(&self, painter: &mut Painter, inner: &egui_macroquad::egui::Rect) {
+        for asteroid in &self.game_state.asteroids {
+            self.draw_minimap_player(painter, inner, asteroid.x, asteroid.y, Color32::GREEN);
+        }
+    }
+
+    fn draw_minimap_others(&self, painter: &mut Painter, inner: &egui_macroquad::egui::Rect) {
+        for player in &self.game_state.players {
+            if player.id == self.my_id {
+                continue;
+            }
+            for component in &player.components {
+                self.draw_minimap_player(
+                    painter,
+                    inner,
+                    component.pos.x,
+                    component.pos.y,
+                    Color32::WHITE,
+                );
+            }
+        }
+    }
+
+    pub fn draw_minimap(&self, ui: &mut Ui) {
+        let (response, mut painter) =
+            ui.allocate_painter(ui.available_size_before_wrap(), Sense::hover());
+        let inner = response.rect.shrink(10.);
+
+        // Background
+        painter.rect(
+            inner,
+            Rounding::none(),
+            Color32::BLACK,
+            Stroke::new(5., Color32::WHITE),
+        );
+
+        self.draw_minimap_me(&mut painter, &inner);
+        self.draw_minimap_others(&mut painter, &inner);
+        self.draw_minimap_asteroids(&mut painter, &inner);
     }
 }
 
@@ -144,7 +259,8 @@ async fn main() -> Result<()> {
 
         // let main_state = &mut MainState::new(my_id);
         loop {
-            main_state.update(&mut reader);
+            let mut client_messages = vec![];
+            main_state.update(&mut reader, &mut client_messages);
 
             main_state.draw(&mut assets)?;
 
@@ -164,35 +280,55 @@ async fn main() -> Result<()> {
                                 ui.heading("Modules");
                                 ui.add_space(3.0);
 
-                                egui::ScrollArea::vertical()
-                                    .id_source("modules")
-                                    .show(ui, |ui| {
-                                        ui.with_layout(Layout::left_to_right(Align::LEFT), |ui| {
-                                            ui.image(
-                                                assets.egui_textures.cannon.texture_id(ctx),
-                                                egui::Vec2 { x: 64., y: 64. },
-                                            );
-                                            ui.image(
-                                                assets.egui_textures.cannon.texture_id(ctx),
-                                                egui::Vec2 { x: 64., y: 64. },
-                                            );
-                                            ui.image(
-                                                assets.egui_textures.cannon.texture_id(ctx),
-                                                egui::Vec2 { x: 64., y: 64. },
-                                            );
-                                        })
-                                    });
+                                ui.with_layout(Layout::left_to_right(Align::LEFT), |ui| {
+                                    ui.image(
+                                        assets.egui_textures.cannon.texture_id(ctx),
+                                        egui::Vec2 { x: 64., y: 64. },
+                                    )
+                                    .interact(egui::Sense {
+                                        click: true,
+                                        drag: true,
+                                        focusable: true,
+                                    })
+                                    .clicked()
+                                    .then(|| println!("Clicked"));
+                                });
                             });
                         },
                     )
                 });
+                egui::Window::new("minimap").show(ctx, |ui| {
+                    main_state.draw_minimap(ui);
+                });
+                egui::Window::new("debug").show(ctx, |ui| {
+                    let Some(player) = main_state
+                        .client_state
+                        .my_player(main_state.my_id, &main_state.game_state) else { return; };
+                    ui.style_mut().wrap = Some(false);
+                    ui.monospace(format!(
+                        "player position: x: {:4.0}, y: {:4.0}",
+                        player.position().x,
+                        player.position().y
+                    ));
+                    ui.monospace(format!("player velocity: {}", player.velocity()));
+                    ui.monospace(format!(
+                        "player angle: {:1.3}",
+                        player.angle() + std::f32::consts::PI
+                    ));
+                    ui.monospace(format!(
+                        "player mouse_x: {}, mouse_y: {}",
+                        player.mouse_x, player.mouse_y
+                    ));
+                });
             });
-
-            // Draw things before egui
 
             egui_macroquad::draw();
 
             next_frame().await;
+
+            while let Some(msg) = client_messages.pop() {
+                send_client_message(&msg, &mut reader.stream);
+            }
         }
     }
 }

@@ -17,14 +17,23 @@ float hash(vec2 p) {
 }
 
 // Draw a star at uv == (0, 0)
-vec3 star(vec2 uv) {
+vec3 star(vec2 uv, float id) {
     float dist = length(uv);
     float glow = 0.005 / dist;
 
-    float ray = max(0.0, 1.0 - abs(uv.x * uv.y * 500.0)) * smoothstep(0.4, 0.1, dist);
+    vec3 color = vec3(glow);
 
-    vec3 color = vec3(glow + ray);
-    //vec3 color = vec3(glow, glow, glow);
+    uv *= mat2(cos(id * 4), -sin(id * 4), sin(id * 4), cos(id * 4));
+
+    float ray = max(0.0, 1.0 - abs(uv.x * uv.y * 200.0)) * smoothstep(0.4, 0.1, dist);
+    // color += ray;
+    // uv *= mat2(0.71, -0.71, 0.71, 0.71);
+    // ray = max(0.0, 1.0 - abs(uv.x * uv.y * 400.0)) * smoothstep(0.4, 0.1, dist);
+    color += ray;
+
+    vec3 shade = vec3(0.75 + 0.5 * sin(id * 4), 0.5, 0.85 + 0.3 * sin(id * 40));
+
+    color *= shade;
 
     return color;
 }
@@ -45,7 +54,7 @@ vec3 star_layer(vec2 gr, vec2 id) {
             float h2 = hash(id + offset + 1);
 
             float size = fract(h1 * 3123.43);
-            vec3 star_color = star(gr - offset - vec2(h1 - 0.5, h2 - 0.5));
+            vec3 star_color = star(gr - offset - vec2(h1 - 0.5, h2 - 0.5), fract(size + h2 * 3));
             star_color *= smoothstep(0.95, 1.0, size);
             color += star_color;
         }
@@ -60,11 +69,11 @@ void main() {
     vec3 col = vec3(0);
 
     for (float i = 1.0 / (LAYERS + 1); i < 1; i += 1.0 / (LAYERS + 1)) {
-        vec2 uvp = uv + (player * (100 * i)) + (vec2(77, 31) * (3 + i * 70));
+        vec2 uvp = uv + player * (100 * i);
 
         uvp = PIXELATE * floor(uvp / PIXELATE);
 
-        vec2 id = floor(uvp / CHUNK);
+        vec2 id = floor(uvp / CHUNK) + 300.0 * i;
         vec2 gr = fract(uvp / CHUNK) - 0.5;
 
         float scale = mix(0.5, 1, i);

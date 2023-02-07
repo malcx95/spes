@@ -11,6 +11,10 @@ impl Vec2 {
     pub fn to_mq(&self) -> macroquad::math::Vec2 {
         macroquad::math::Vec2::new(self.x, self.y)
     }
+
+    pub fn atan2(&self) -> f32 {
+        self.x.atan2(self.y)
+    }
 }
 
 pub fn vec2(x: f32, y: f32) -> Vec2 {
