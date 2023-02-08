@@ -104,6 +104,10 @@ impl MainState {
         self.last_time = Instant::now();
 
         while let Some(message) = socket.try_recv() {
+            if message.len() == 0 {
+                break;
+            }
+            dbg!(&message);
             match bincode::deserialize(&message).unwrap() {
                 ServerMessage::AssignId(_) => panic!("Got new ID after intialisation"),
                 ServerMessage::GameState(state) => self.game_state = state,
@@ -212,7 +216,7 @@ impl MainState {
 #[macroquad::main("BasicShapes")]
 async fn main() -> Result<()> {
     #[cfg(not(target_arch = "wasm32"))]
-    let mut socket = QuadSocket::connect(&std::env::var("SERVER").unwrap_or(String::from("localhost:4445"))).expect("Could not connect to server");
+    let mut socket = QuadSocket::connect(&std::env::var("SERVER").unwrap_or(String::from("localhost:4444"))).expect("Could not connect to server");
     #[cfg(target_arch = "wasm32")]
     let mut socket = QuadSocket::connect("ws://localhost:4445").unwrap();
     #[cfg(target_arch = "wasm32")]
