@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 macroquad = "0.3"
-bincode = "1.2.1"
+postcard = {version="1.0", features=["use-std"]}
 libplen = {path="libplen"}
 unicode-truncate = "0.1.1"
 enum-map = "0.6.2"

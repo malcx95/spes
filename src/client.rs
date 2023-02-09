@@ -9,6 +9,7 @@ use client_state::ClientState;
 use egui::{Align, Layout, Sense};
 use egui_macroquad::egui::{self, Color32, Painter, Rounding, Stroke, Ui};
 use macroquad::prelude::*;
+use postcard::accumulator::{CobsAccumulator, FeedResult};
 use quad_net::quad_socket::client::QuadSocket;
 
 use assets::Assets;
@@ -17,7 +18,7 @@ use libplen::gamestate;
 use libplen::messages::{ClientInput, ClientMessage, ServerMessage};
 
 fn send_client_message<'a>(msg: &ClientMessage, socket: &mut QuadSocket) {
-    let data = bincode::serialize(msg).expect("Failed to encode message");
+    let data = postcard::to_stdvec_cobs(msg).expect("Failed to encode message");
     socket.send(&data);
 }
 
@@ -30,15 +31,17 @@ enum StateResult {
 
 struct MainState {
     my_id: u64,
+    cobs_buf: CobsAccumulator<4096>,
     game_state: gamestate::GameState,
     client_state: client_state::ClientState,
     last_time: Instant,
 }
 
 impl MainState {
-    fn new(my_id: u64) -> MainState {
+    fn new(my_id: u64, cobs_buf: CobsAccumulator<4096>) -> MainState {
         MainState {
             my_id,
+            cobs_buf,
             game_state: gamestate::GameState::new(None),
             client_state: client_state::ClientState::new(my_id),
             last_time: Instant::now(),
@@ -104,13 +107,20 @@ impl MainState {
         self.last_time = Instant::now();
 
         while let Some(message) = socket.try_recv() {
-            if message.len() == 0 {
-                break;
-            }
-            dbg!(&message);
-            match bincode::deserialize(&message).unwrap() {
-                ServerMessage::AssignId(_) => panic!("Got new ID after intialisation"),
-                ServerMessage::GameState(state) => self.game_state = state,
+            match self.cobs_buf.feed(&message) {
+                FeedResult::Success { data, remaining: _ } => {
+                    match data {
+                        ServerMessage::AssignId(_) => panic!("Got new ID after intialisation"),
+                        ServerMessage::GameState(state) => self.game_state = state,
+                    }
+                }
+                FeedResult::DeserError(_) => {
+                    println!("Invalid message!");
+                }
+                FeedResult::OverFull(_) => {
+                    print!("Buffer overflow!");
+                }
+                FeedResult::Consumed => {},
             }
         }
 
@@ -231,10 +241,26 @@ async fn main() -> Result<()> {
     let input_message = ClientMessage::Input(Default::default());
     send_client_message(&input_message, &mut socket);
 
-    let msg = loop {
+    let mut cobs_buf = CobsAccumulator::new();
+
+    let my_id = 'id_loop: loop {
         if let Some(msg) = socket.try_recv() {
-            if msg.len() > 0 {
-                break bincode::deserialize(&msg).unwrap();
+            match cobs_buf.feed(&msg) {
+                FeedResult::Success { data, remaining: _ } => {
+                    if let ServerMessage::AssignId(id) = data {
+                        println!("Received the id {}", id);
+                        break 'id_loop id;
+                    } else {
+                        panic!("Expected to get an id from server")
+                    };
+                }
+                FeedResult::DeserError(_) => {
+                    println!("Invalid message!");
+                }
+                FeedResult::OverFull(_) => {
+                    print!("Buffer overflow!");
+                }
+                FeedResult::Consumed => {},
             }
             next_frame().await;
         }
@@ -242,14 +268,7 @@ async fn main() -> Result<()> {
 
     let mut assets = assets::Assets::new()?;
 
-    let my_id = if let ServerMessage::AssignId(id) = msg {
-        println!("Received the id {}", id);
-        id
-    } else {
-        panic!("Expected to get an id from server")
-    };
-
-    let mut main_state = MainState::new(my_id);
+    let mut main_state = MainState::new(my_id, cobs_buf);
 
     let name = String::new();
 

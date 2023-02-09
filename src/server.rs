@@ -1,9 +1,9 @@
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
-use libplen::player::ComponentSpecialization;
-use rapier2d::prelude::*;
+use postcard::accumulator::{CobsAccumulator, FeedResult};
 use quad_net::quad_socket::server::SocketHandle;
+use rapier2d::prelude::*;
 use unicode_truncate::UnicodeTruncateStr;
 
 use libplen::constants;
@@ -11,17 +11,28 @@ use libplen::gamestate;
 use libplen::math::{vec2, Vec2};
 use libplen::messages::{ClientInput, ClientMessage, ServerMessage};
 use libplen::physics::PhysicsState;
+use libplen::player::ComponentSpecialization;
 use libplen::player::Player;
 
 fn send_server_message<'a>(msg: &ServerMessage, handle: &mut SocketHandle<'a>) -> Result<(), ()> {
-    let data = bincode::serialize(msg).expect("Failed to encode message");
+    let data = postcard::to_stdvec_cobs(msg).expect("Failed to encode message");
     handle.send(&data)
 }
 
-#[derive(Default)]
 struct Client {
     id: Option<u64>,
     input: ClientInput,
+    cobs_buf: CobsAccumulator<4096>,
+}
+
+impl Default for Client {
+    fn default() -> Client {
+        Client {
+            id: None,
+            input: Default::default(),
+            cobs_buf: CobsAccumulator::new(),
+        }
+    }
 }
 
 struct Server {
@@ -189,32 +200,38 @@ fn main() {
                     }
 
                     let client_id = client.id.unwrap();
+                    match client.cobs_buf.feed(&msg) {
+                        FeedResult::Success { data, remaining: _ } => {
+                            match data {
+                                ClientMessage::Input(input) => {
+                                    client.input = input;
+                                }
+                                ClientMessage::JoinGame { mut name } => {
+                                    if name.trim().len() != 0 {
+                                        name = name.trim().unicode_truncate(20).0.to_string()
+                                    } else {
+                                        name = "Mr Whitespace".into();
+                                    }
 
-                    match bincode::deserialize(&msg) {
-                        Ok(ClientMessage::Input(input)) => {
-                            client.input = input;
-                        }
-                        Ok(ClientMessage::JoinGame { mut name }) => {
-                            if name.trim().len() != 0 {
-                                name = name.trim().unicode_truncate(20).0.to_string()
-                            } else {
-                                name = "Mr Whitespace".into();
+                                    let mut player = Player::new(client_id, name, &mut server.p);
+                                    player.set_num_shield_points(20, &mut server.p);
+                                    server.state.add_player(player);
+                                }
+                                ClientMessage::AddComponent {
+                                    world_pos,
+                                    specialization,
+                                } => {
+                                    server.add_component(world_pos, specialization, client_id);
+                                }
                             }
-
-                            let mut player = Player::new(client_id, name, &mut server.p);
-                            player.set_num_shield_points(20, &mut server.p);
-                            server.state.add_player(player);
                         }
-                        Ok(ClientMessage::AddComponent {
-                            world_pos,
-                            specialization,
-                        }) => {
-                            server.add_component(world_pos, specialization, client_id);
+                        FeedResult::DeserError(_) => {
+                            println!("Could not decode message from {}", client_id);
                         }
-                        Err(_) => {
-                            println!("Could not decode message from {}, deleting", client_id);
-                            out.disconnect();
+                        FeedResult::OverFull(_) => {
+                            print!("Buffer overflow!");
                         }
+                        FeedResult::Consumed => {},
                     }
                 }
             },
